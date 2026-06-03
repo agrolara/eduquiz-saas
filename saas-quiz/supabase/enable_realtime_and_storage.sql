@@ -3,9 +3,6 @@ insert into storage.buckets (id, name, public)
 values ('quiz-assets', 'quiz-assets', true)
 on conflict (id) do nothing;
 
--- Enable RLS on storage.objects
-alter table storage.objects enable row level security;
-
 -- Drop existing storage policies if any to prevent conflicts
 drop policy if exists "Allow authenticated uploads to quiz-assets" on storage.objects;
 drop policy if exists "Allow public read from quiz-assets" on storage.objects;
