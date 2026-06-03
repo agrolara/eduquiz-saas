@@ -242,7 +242,14 @@ function AppContent() {
       {/* Main Navbar */}
       <header className="app-header">
         <div className="app-logo">
-          <div className="logo-icon">▲</div>
+          <div className="logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '22px', height: '22px' }}>
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M22 7v6" />
+              <circle cx="22" cy="13" r="1" fill="currentColor" />
+              <path d="M6 10v4c0 3.3 2.7 6 6 6s6-2.7 6-6v-4" />
+            </svg>
+          </div>
           <span>EduQuiz</span>
         </div>
         
@@ -273,13 +280,15 @@ function AppContent() {
               </button>
             </>
           ) : (
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => selectDemoUser('super_admin')} 
-              style={{ padding: '8px 16px', fontSize: '13px' }}
+            <a 
+              href="https://wa.me/56993005959" 
+              className="btn btn-primary" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ padding: '10px 20px', fontSize: '13px', textDecoration: 'none', fontWeight: '800' }}
             >
-              <Key size={16} /> Acceso Rápido (Demo)
-            </button>
+              ¡¡¡Pruébalo ya!!!
+            </a>
           )}
         </div>
       </header>
