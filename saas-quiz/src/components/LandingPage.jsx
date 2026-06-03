@@ -182,6 +182,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="stats-section">
+        <div className="container">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <span className="stat-number">+10.000</span>
+              <span className="stat-label">Preguntas respondidas en vivo</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-number">98%</span>
+              <span className="stat-label">De retención y participación</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-number">150+</span>
+              <span className="stat-label">Profesores activos semanalmente</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="features-section">
         <div className="container">
           <div className="section-header">
