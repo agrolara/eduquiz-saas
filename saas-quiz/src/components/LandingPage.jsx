@@ -152,16 +152,19 @@ export default function LandingPage() {
                   </div>
                   <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'var(--font-mono)' }}>eduquiz.cl/game/demo</span>
                 </div>
-                <div style={{ width: '100%', overflow: 'hidden', borderRadius: 'var(--radius-sm)', position: 'relative' }}>
-                  <img 
-                    src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=1200" 
-                    alt="Niños en el colegio participando en clases virtuales" 
-                    style={{ width: '100%', display: 'block', opacity: 0.85 }}
+                <div style={{ width: '100%', overflow: 'hidden', borderRadius: 'var(--radius-sm)', position: 'relative', aspectRatio: '16/9' }}>
+                  <video 
+                    src="/promo_video.mp4" 
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.85 }}
                   />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95), transparent 70%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '24px', textAlign: 'left' }}>
                     <span className="tag tag-success" style={{ width: 'fit-content', marginBottom: '8px' }}>En Vivo</span>
-                    <h3 style={{ color: 'white', fontSize: '20px', marginBottom: '4px', letterSpacing: '-0.01em', fontFamily: 'var(--font-display)' }}>Desafío de Trivia de Geografía</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>Sincronización en tiempo real y co-evaluación activa de respuestas.</p>
+                    <h3 style={{ color: 'white', fontSize: '20px', marginBottom: '4px', letterSpacing: '-0.01em', fontFamily: 'var(--font-display)' }}>EduQuiz en Acción</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>Descubre cómo funciona la gamificación interactiva en tiempo real.</p>
                   </div>
                 </div>
               </div>
