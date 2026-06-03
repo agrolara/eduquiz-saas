@@ -258,8 +258,8 @@ CREATE POLICY "Course Admin / Super Admin can see Whitelist"
 ON public.whitelist_alumnos FOR SELECT USING (
   public.es_super_admin(auth.uid()) OR 
   EXISTS (
-    SELECT 1 FROM public.cursos
-    WHERE id = curso_id AND admin_email = auth.email()
+    SELECT 1 FROM public.perfiles_usuarios p
+    WHERE p.id = auth.uid() AND p.rol = 'admin_curso' AND p.curso_id = whitelist_alumnos.curso_id
   )
 );
 
@@ -267,8 +267,8 @@ CREATE POLICY "Course Admin / Super Admin can edit Whitelist"
 ON public.whitelist_alumnos FOR ALL USING (
   public.es_super_admin(auth.uid()) OR 
   EXISTS (
-    SELECT 1 FROM public.cursos
-    WHERE id = curso_id AND admin_email = auth.email()
+    SELECT 1 FROM public.perfiles_usuarios p
+    WHERE p.id = auth.uid() AND p.rol = 'admin_curso' AND p.curso_id = whitelist_alumnos.curso_id
   )
 );
 
@@ -277,10 +277,8 @@ CREATE POLICY "Allow members and admins to view Sessions"
 ON public.sesiones_juego FOR SELECT USING (
   public.es_super_admin(auth.uid()) OR
   EXISTS (
-    SELECT 1 FROM public.cursos WHERE id = curso_id AND admin_email = auth.email()
-  ) OR
-  EXISTS (
-    SELECT 1 FROM public.perfiles_usuarios WHERE id = auth.uid() AND curso_id = sesiones_juego.curso_id
+    SELECT 1 FROM public.perfiles_usuarios p 
+    WHERE p.id = auth.uid() AND p.curso_id = sesiones_juego.curso_id
   )
 );
 
@@ -288,7 +286,8 @@ CREATE POLICY "Allow Course Admin and Super Admin to create Sessions"
 ON public.sesiones_juego FOR INSERT WITH CHECK (
   public.es_super_admin(auth.uid()) OR
   EXISTS (
-    SELECT 1 FROM public.cursos WHERE id = curso_id AND admin_email = auth.email()
+    SELECT 1 FROM public.perfiles_usuarios p 
+    WHERE p.id = auth.uid() AND p.rol = 'admin_curso' AND p.curso_id = curso_id
   )
 );
 
@@ -296,10 +295,8 @@ CREATE POLICY "Allow members and admins to update Sessions"
 ON public.sesiones_juego FOR UPDATE USING (
   public.es_super_admin(auth.uid()) OR
   EXISTS (
-    SELECT 1 FROM public.cursos WHERE id = curso_id AND admin_email = auth.email()
-  ) OR
-  EXISTS (
-    SELECT 1 FROM public.perfiles_usuarios WHERE id = auth.uid() AND curso_id = sesiones_juego.curso_id
+    SELECT 1 FROM public.perfiles_usuarios p 
+    WHERE p.id = auth.uid() AND p.curso_id = sesiones_juego.curso_id
   )
 );
 
@@ -315,10 +312,13 @@ ON public.preguntas FOR SELECT USING (
 CREATE POLICY "Allow current drawer and admins to insert Questions" 
 ON public.preguntas FOR INSERT WITH CHECK (
   EXISTS (
-    SELECT 1 FROM public.sesiones_juego
-    WHERE id = sesion_id AND (
-      turno_actual_usuario_id = auth.uid() OR
-      EXISTS (SELECT 1 FROM public.cursos WHERE id = curso_id AND admin_email = auth.email()) OR
+    SELECT 1 FROM public.sesiones_juego s
+    WHERE s.id = sesion_id AND (
+      s.turno_actual_usuario_id = auth.uid() OR
+      EXISTS (
+        SELECT 1 FROM public.perfiles_usuarios p
+        WHERE p.id = auth.uid() AND p.rol = 'admin_curso' AND p.curso_id = s.curso_id
+      ) OR
       public.es_super_admin(auth.uid())
     )
   )
@@ -353,10 +353,13 @@ ON public.respuestas FOR UPDATE USING (
     WHERE preguntas.id = pregunta_id AND preguntas.creador_id = auth.uid()
   ) OR
   EXISTS (
-    SELECT 1 FROM public.preguntas
-    JOIN public.sesiones_juego ON sesiones_juego.id = preguntas.sesion_id
-    JOIN public.cursos ON cursos.id = sesiones_juego.curso_id
-    WHERE preguntas.id = pregunta_id AND (cursos.admin_email = auth.email() OR public.es_super_admin(auth.uid()))
+    SELECT 1 FROM public.preguntas pq
+    JOIN public.sesiones_juego s ON s.id = pq.sesion_id
+    JOIN public.perfiles_usuarios p ON p.id = auth.uid()
+    WHERE pq.id = pregunta_id AND (
+      (p.rol = 'admin_curso' AND p.curso_id = s.curso_id) OR 
+      p.rol = 'super_admin'
+    )
   )
 );
 
@@ -369,6 +372,7 @@ ON public.rankings FOR ALL USING (
   auth.uid() = usuario_id OR
   public.es_super_admin(auth.uid()) OR
   EXISTS (
-    SELECT 1 FROM public.cursos WHERE id = curso_id AND admin_email = auth.email()
+    SELECT 1 FROM public.perfiles_usuarios p 
+    WHERE p.id = auth.uid() AND p.rol = 'admin_curso' AND p.curso_id = rankings.curso_id
   )
 );

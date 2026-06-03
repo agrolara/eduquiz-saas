@@ -78,7 +78,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   useEffect(() => {
     if (question?.id && !demoMode) {
-      fetchAnswers();
+      fetchAnswers(question.id);
     }
   }, [question?.id, demoMode]);
 
@@ -153,13 +153,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         clearInterval(timerInterval.current);
         setTimeLeft(0);
         
-        // Auto block inputs and switch to evaluation (only for drawer/creator to avoid double-update collisions)
-        if (isMyTurn) {
-          supabase
-            .from('sesiones_juego')
-            .update({ estado: 'evaluacion' })
-            .eq('id', sessionId);
-        }
+        // Switch session state to evaluation once time expires.
+        // Allow any active client to perform this single-shot update safely.
+        supabase
+          .from('sesiones_juego')
+          .update({ estado: 'evaluacion' })
+          .eq('id', sessionId)
+          .eq('estado', 'respuesta');
       } else {
         setTimeLeft(left);
       }
@@ -206,11 +206,12 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     if (err1) return console.error(err1);
     setSession(sess);
 
-    // Get whitelisted / joined users
+    // Get whitelisted / joined users (only students, excluding teacher)
     const { data: users, error: err2 } = await supabase
       .from('perfiles_usuarios')
       .select('*')
-      .eq('curso_id', sess.curso_id);
+      .eq('curso_id', sess.curso_id)
+      .eq('rol', 'jugador');
     if (!err2) setPlayers(users);
 
     if (sess.pregunta_actual_id) {
@@ -275,8 +276,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           setQuestion(payload.new);
         }
       })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'respuestas' }, () => {
-        fetchAnswers();
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'respuestas' }, payload => {
+        fetchAnswers(payload.new.pregunta_id);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => {
         fetchRankings();
@@ -311,12 +312,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   };
 
-  const fetchAnswers = async () => {
-    if (!question) return;
+  const fetchAnswers = async (qId) => {
+    const targetQId = qId || question?.id;
+    if (!targetQId) return;
     const { data } = await supabase
       .from('respuestas')
       .select('*, perfiles_usuarios(nombre, email)')
-      .eq('pregunta_id', question.id);
+      .eq('pregunta_id', targetQId);
     if (data) {
       setAnswers(data.map(ans => ({
         id: ans.id,
@@ -470,7 +472,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         setMyAnswerText('');
         setMyAnswerFile(null);
         alert("¡Respuesta enviada!");
-        fetchAnswers();
+        fetchAnswers(question?.id);
       }
     } catch (err) {
       console.error("Crash submitting answer:", err);
