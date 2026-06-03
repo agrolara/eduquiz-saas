@@ -120,29 +120,56 @@ function AppContent() {
       return;
     }
 
-    if (!profile?.curso_id) return;
+    if (!profile?.curso_id) {
+      setRankings([]); // Clear rankings while loading real profile to avoid mock leakage
+      return;
+    }
 
     const fetchRankings = async () => {
       setLoadingRankings(true);
-      const { data, error } = await supabase
+      
+      const { data: ranks, error: rankErr } = await supabase
         .from('rankings')
-        .select('*, perfiles_usuarios(*)')
+        .select('*')
         .eq('curso_id', profile.curso_id)
         .order('puntaje_total', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching rankings for player:", error);
-      } else {
-        const formatted = data.map(r => ({
-          id: r.id,
-          nombre: r.perfiles_usuarios?.nombre || r.perfiles_usuarios?.email || 'Estudiante',
-          email: r.perfiles_usuarios?.email,
-          puntaje_total: r.puntaje_total,
-          sesiones_jugadas: r.sesiones_jugadas || 0,
-          historial_participacion: r.historial_participacion || []
-        }));
-        setRankings(formatted);
+      if (rankErr) {
+        console.error("Error fetching rankings for player:", rankErr);
+        setLoadingRankings(false);
+        return;
       }
+
+      if (!ranks || ranks.length === 0) {
+        setRankings([]);
+        setLoadingRankings(false);
+        return;
+      }
+
+      const { data: profiles, error: profErr } = await supabase
+        .from('perfiles_usuarios')
+        .select('id, nombre, email')
+        .eq('curso_id', profile.curso_id);
+
+      if (profErr) {
+        console.error("Error fetching profiles for rankings:", profErr);
+      }
+
+      const profileMap = {};
+      profiles?.forEach(p => {
+        profileMap[p.id] = p;
+      });
+
+      const formatted = ranks.map(r => ({
+        id: r.id,
+        nombre: profileMap[r.usuario_id]?.nombre || profileMap[r.usuario_id]?.email || 'Estudiante',
+        email: profileMap[r.usuario_id]?.email || 'Desconocido',
+        puntaje_total: r.puntaje_total,
+        sesiones_jugadas: r.sesiones_jugadas || 0,
+        historial_participacion: r.historial_participacion || []
+      }));
+
+      setRankings(formatted);
       setLoadingRankings(false);
     };
 

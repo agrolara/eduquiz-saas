@@ -91,6 +91,10 @@ export default function CourseAdminDashboard({ onStartSession }) {
       fetchWhitelist();
       fetchSessions();
       fetchRankings();
+    } else {
+      setWhitelist([]);
+      setRankings([]);
+      setSessions([]);
     }
   }, [profile, demoMode]);
 
@@ -114,25 +118,48 @@ export default function CourseAdminDashboard({ onStartSession }) {
   };
 
   const fetchRankings = async () => {
-    const { data, error } = await supabase
+    const { data: ranks, error: rankErr } = await supabase
       .from('rankings')
-      .select('*, perfiles_usuarios(*)')
+      .select('*')
       .eq('curso_id', profile.curso_id)
       .order('puntaje_total', { ascending: false });
     
-    if (error) console.error("Error fetching rankings:", error);
-    else {
-      // Map profiles
-      const formatted = data.map((r, i) => ({
-        id: r.id,
-        nombre: r.perfiles_usuarios?.nombre || r.perfiles_usuarios?.email || 'Estudiante',
-        email: r.perfiles_usuarios?.email,
-        puntaje_total: r.puntaje_total,
-        sesiones_jugadas: r.sesiones_jugadas || 0,
-        historial_participacion: r.historial_participacion || []
-      }));
-      setRankings(formatted);
+    if (rankErr) {
+      console.error("Error fetching rankings:", rankErr);
+      return;
     }
+
+    if (!ranks || ranks.length === 0) {
+      setRankings([]);
+      return;
+    }
+
+    // Fetch student profiles for mapping
+    const { data: profiles, error: profErr } = await supabase
+      .from('perfiles_usuarios')
+      .select('id, nombre, email')
+      .eq('curso_id', profile.curso_id);
+
+    if (profErr) {
+      console.error("Error fetching profiles for rankings:", profErr);
+    }
+
+    const profileMap = {};
+    profiles?.forEach(p => {
+      profileMap[p.id] = p;
+    });
+
+    // Map profiles of the student rankings
+    const formatted = ranks.map(r => ({
+      id: r.id,
+      nombre: profileMap[r.usuario_id]?.nombre || profileMap[r.usuario_id]?.email || 'Estudiante',
+      email: profileMap[r.usuario_id]?.email || 'Desconocido',
+      puntaje_total: r.puntaje_total,
+      sesiones_jugadas: r.sesiones_jugadas || 0,
+      historial_participacion: r.historial_participacion || []
+    }));
+
+    setRankings(formatted);
   };
 
   const handleAddWhitelist = async (e) => {
