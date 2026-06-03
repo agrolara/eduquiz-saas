@@ -87,12 +87,12 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   }, [question?.id, demoMode]);
 
-  // Polling fallback: fetch answers every 5 seconds during respuesta phase
+  // Polling fallback: fetch answers every 3 seconds during respuesta phase
   useEffect(() => {
     if (session?.estado === 'respuesta' && question?.id && !demoMode) {
       const pollInterval = setInterval(() => {
         fetchAnswers(question.id);
-      }, 5000);
+      }, 3000);
       return () => clearInterval(pollInterval);
     }
   }, [session?.estado, question?.id, demoMode]);
@@ -233,16 +233,24 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       const { data: q } = await supabase.from('preguntas').select('*').eq('id', sess.pregunta_actual_id).single();
       setQuestion(q);
       
-      // Load current answers on load/refresh
-      const { data: ansList } = await supabase
+      // Load current answers on load/refresh (no join - fetch profiles separately)
+      const { data: ansList, error: ansErr } = await supabase
         .from('respuestas')
-        .select('*, perfiles_usuarios(nombre, email)')
+        .select('*')
         .eq('pregunta_id', q.id);
-      if (ansList) {
+      if (ansErr) console.error('Error loading answers:', ansErr);
+      if (ansList && ansList.length > 0) {
+        const playerIds = [...new Set(ansList.map(a => a.alumno_id))];
+        const { data: profiles } = await supabase
+          .from('perfiles_usuarios')
+          .select('id, nombre, email')
+          .in('id', playerIds);
+        const profileMap = {};
+        profiles?.forEach(p => { profileMap[p.id] = p; });
         setAnswers(ansList.map(ans => ({
           id: ans.id,
           alumno_id: ans.alumno_id,
-          nombre: ans.perfiles_usuarios?.nombre || ans.perfiles_usuarios?.email,
+          nombre: profileMap[ans.alumno_id]?.nombre || profileMap[ans.alumno_id]?.email || 'Alumno',
           texto: ans.texto,
           calificacion: ans.calificacion,
           url_imagen: ans.url_imagen
@@ -332,19 +340,41 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const fetchAnswers = async (qId) => {
     const targetQId = qId || question?.id;
     if (!targetQId) return;
-    const { data } = await supabase
-      .from('respuestas')
-      .select('*, perfiles_usuarios(nombre, email)')
-      .eq('pregunta_id', targetQId);
-    if (data) {
-      setAnswers(data.map(ans => ({
-        id: ans.id,
-        alumno_id: ans.alumno_id,
-        nombre: ans.perfiles_usuarios?.nombre || ans.perfiles_usuarios?.email,
-        texto: ans.texto,
-        calificacion: ans.calificacion,
-        url_imagen: ans.url_imagen
-      })));
+    try {
+      // Query answers WITHOUT join (avoids PostgREST FK resolution issues)
+      const { data, error } = await supabase
+        .from('respuestas')
+        .select('*')
+        .eq('pregunta_id', targetQId);
+
+      if (error) {
+        console.error('Error fetching answers:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Fetch profiles separately
+        const playerIds = [...new Set(data.map(a => a.alumno_id))];
+        const { data: profiles } = await supabase
+          .from('perfiles_usuarios')
+          .select('id, nombre, email')
+          .in('id', playerIds);
+        const profileMap = {};
+        profiles?.forEach(p => { profileMap[p.id] = p; });
+
+        setAnswers(data.map(ans => ({
+          id: ans.id,
+          alumno_id: ans.alumno_id,
+          nombre: profileMap[ans.alumno_id]?.nombre || profileMap[ans.alumno_id]?.email || 'Alumno',
+          texto: ans.texto,
+          calificacion: ans.calificacion,
+          url_imagen: ans.url_imagen
+        })));
+      } else if (data && data.length === 0) {
+        setAnswers([]);
+      }
+    } catch (err) {
+      console.error('Crash in fetchAnswers:', err);
     }
   };
 
