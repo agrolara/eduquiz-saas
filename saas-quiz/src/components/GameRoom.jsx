@@ -87,6 +87,16 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   }, [question?.id, demoMode]);
 
+  // Polling fallback: fetch answers every 5 seconds during respuesta phase
+  useEffect(() => {
+    if (session?.estado === 'respuesta' && question?.id && !demoMode) {
+      const pollInterval = setInterval(() => {
+        fetchAnswers(question.id);
+      }, 5000);
+      return () => clearInterval(pollInterval);
+    }
+  }, [session?.estado, question?.id, demoMode]);
+
   // Demo Mode Simulation Logic
   useEffect(() => {
     if (!demoMode || !session) return;
@@ -495,9 +505,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   const handleFinishEvaluation = async () => {
     if (demoMode) {
-      // In demo mode, update player rankings in local view
       setSession(s => {
-        // Shift to next player
         const currentIndex = s.orden_turnos.indexOf(s.turno_actual_usuario_id);
         const nextIndex = (currentIndex + 1) % s.orden_turnos.length;
         return {
@@ -507,24 +515,21 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           pregunta_actual_id: null
         };
       });
-      // Add points
       alert("Evaluación completada. Se han repartido los puntos y pasamos al siguiente turno.");
       setAnswers([]);
       setQuestion(null);
       return;
     }
 
-    try {
-      // Save grades in Supabase
-      for (const ans of answers) {
+    // Save grades individually - failures don't block turn rotation
+    for (const ans of answers) {
+      try {
         await supabase
           .from('respuestas')
           .update({ calificacion: ans.calificacion || 0 })
           .eq('id', ans.id);
 
-        // Increment student's ranking points
         if (ans.calificacion > 0) {
-          // Check if exists
           const { data: rank } = await supabase
             .from('rankings')
             .select('*')
@@ -547,9 +552,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               }]);
           }
         }
+      } catch (gradeErr) {
+        console.error('Error grading answer', ans.id, gradeErr);
       }
+    }
 
-      // Rotate turns
+    // ALWAYS rotate turns regardless of grading success
+    try {
       const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
       const nextIndex = (currentIndex + 1) % session.orden_turnos.length;
 
@@ -558,16 +567,20 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         .update({
           estado: 'pregunta',
           turno_actual_usuario_id: session.orden_turnos[nextIndex],
-          pregunta_actual_id: null
+          pregunta_actual_id: null,
+          temporizador_fin: null
         })
         .eq('id', sessionId);
 
       if (sErr) {
         alert("Error al rotar turnos: " + sErr.message);
+      } else {
+        setAnswers([]);
+        setQuestion(null);
       }
     } catch (err) {
-      console.error("Crash finishing evaluation:", err);
-      alert("Error inesperado al completar la evaluación: " + err.message);
+      console.error("Crash rotating turns:", err);
+      alert("Error inesperado al rotar turnos: " + err.message);
     }
   };
 
@@ -768,12 +781,65 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               )}
 
               {isMyTurn ? (
-                <div style={{ backgroundColor: 'var(--brand-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-focus)' }}>
-                  <h4 style={{ color: 'var(--brand-dark)', marginBottom: '8px' }}>Tu respuesta correcta registrada:</h4>
-                  <p style={{ fontWeight: '700', fontSize: '18px' }}>{question.respuesta_correcta}</p>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '12px' }}>
-                    Espera a que tus compañeros respondan. ({answers.length} respuestas recibidas)
-                  </p>
+                <div>
+                  <div style={{ backgroundColor: 'var(--brand-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-focus)', marginBottom: '20px' }}>
+                    <h4 style={{ color: 'var(--brand-dark)', marginBottom: '4px', fontSize: '14px' }}>Tu respuesta correcta:</h4>
+                    <p style={{ fontWeight: '700', fontSize: '16px', margin: 0 }}>{question.respuesta_correcta}</p>
+                  </div>
+
+                  <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>
+                    Respuestas recibidas ({answers.filter(a => a.alumno_id !== profile.id).length}):
+                  </h3>
+
+                  {answers.filter(ans => ans.alumno_id !== profile.id).length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '24px 0' }}>
+                      Esperando respuestas de tus compañeros...
+                    </p>
+                  ) : (
+                    <div className="grading-panel">
+                      {answers.filter(ans => ans.alumno_id !== profile.id).map(ans => (
+                        <div key={ans.id} className="grading-item">
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                              Respuesta de {ans.nombre}:
+                            </div>
+                            <div style={{ fontSize: '16px', fontWeight: '800', marginBottom: '6px' }}>"{ans.texto}"</div>
+                            {ans.url_imagen && (
+                              <div style={{ padding: '8px 12px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', display: 'inline-block', marginTop: '6px', maxWidth: '300px' }}>
+                                {isImageFile(ans.url_imagen) ? (
+                                  <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer">
+                                    <img src={ans.url_imagen} alt="Respuesta adjunta" style={{ maxWidth: '100%', maxHeight: '120px', borderRadius: '4px', display: 'block' }} />
+                                  </a>
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>📎</span>
+                                    <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', fontWeight: '700', textDecoration: 'underline' }}>
+                                      Ver archivo adjunto
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="grading-buttons">
+                            <button className="grade-btn grade-btn-bad" onClick={() => handleGradeAnswer(ans.id, 0)} style={{ opacity: ans.calificacion === 0 ? 1 : 0.4 }}>Mala (0 pt)</button>
+                            <button className="grade-btn grade-btn-mid" onClick={() => handleGradeAnswer(ans.id, 5)} style={{ opacity: ans.calificacion === 5 ? 1 : 0.4 }}>Regular (5 pt)</button>
+                            <button className="grade-btn grade-btn-good" onClick={() => handleGradeAnswer(ans.id, 10)} style={{ opacity: ans.calificacion === 10 ? 1 : 0.4 }}>Buena (10 pt)</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {answers.filter(a => a.alumno_id !== profile.id).length > 0 && (
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={handleFinishEvaluation}
+                      style={{ width: '100%', marginTop: '24px' }}
+                    >
+                      Finalizar Ronda & Siguiente Turno
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div>
