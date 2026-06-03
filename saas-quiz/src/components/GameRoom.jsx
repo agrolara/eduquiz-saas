@@ -58,10 +58,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       });
       setPlayers(demoPlayers);
       setRankings([
-        { email: 'alumna.sofia@gmail.com', puntaje_total: 120 },
-        { email: 'alumno.benjamin@gmail.com', puntaje_total: 95 },
-        { email: 'alumno.mateo@gmail.com', puntaje_total: 80 },
-        { email: 'alumna.valentina@gmail.com', puntaje_total: 75 }
+        { usuario_id: 'demo-student-sofia', email: 'alumna.sofia@gmail.com', puntaje_total: 120 },
+        { usuario_id: 'demo-student-benjamin', email: 'alumno.benjamin@gmail.com', puntaje_total: 95 },
+        { usuario_id: 'demo-student-mateo', email: 'alumno.mateo@gmail.com', puntaje_total: 80 },
+        { usuario_id: 'demo-student-valentina', email: 'alumna.valentina@gmail.com', puntaje_total: 75 }
       ]);
       return;
     }
@@ -96,6 +96,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       return () => clearInterval(pollInterval);
     }
   }, [session?.estado, question?.id, demoMode]);
+
+  // Auto-grade non-responders when the round transitions to evaluation phase
+  useEffect(() => {
+    if (session?.estado === 'evaluacion' && isMyTurn && question?.id) {
+      autoGradeNonResponders();
+    }
+  }, [session?.estado, isMyTurn, question?.id]);
 
   // Demo Mode Simulation Logic
   useEffect(() => {
@@ -266,17 +273,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       setTimeLeft(left > 0 ? left : 0);
     }
 
-    // Fetch initial rankings
+    // Fetch initial rankings (no join, match by usuario_id directly in frontend)
     const { data: ranks } = await supabase
       .from('rankings')
-      .select('*, perfiles_usuarios(*)')
+      .select('*')
       .eq('curso_id', sess.curso_id);
     if (ranks) {
-      const formatted = ranks.map(r => ({
-        email: r.perfiles_usuarios?.email,
-        puntaje_total: r.puntaje_total
-      }));
-      setRankings(formatted);
+      setRankings(ranks);
     }
   };
 
@@ -321,19 +324,23 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   const fetchRankings = async () => {
     if (demoMode) return;
-    const { data: sess } = await supabase.from('sesiones_juego').select('curso_id').eq('id', sessionId).single();
-    if (!sess) return;
-    
-    const { data: ranks } = await supabase
-      .from('rankings')
-      .select('*, perfiles_usuarios(*)')
-      .eq('curso_id', sess.curso_id);
-    if (ranks) {
-      const formatted = ranks.map(r => ({
-        email: r.perfiles_usuarios?.email,
-        puntaje_total: r.puntaje_total
-      }));
-      setRankings(formatted);
+    try {
+      const { data: sess } = await supabase.from('sesiones_juego').select('curso_id').eq('id', sessionId).single();
+      if (!sess) return;
+      
+      const { data: ranks, error } = await supabase
+        .from('rankings')
+        .select('*')
+        .eq('curso_id', sess.curso_id);
+      if (error) {
+        console.error("Error fetching rankings:", error);
+        return;
+      }
+      if (ranks) {
+        setRankings(ranks);
+      }
+    } catch (err) {
+      console.error("Crash in fetchRankings:", err);
     }
   };
 
@@ -537,12 +544,109 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   };
 
-  const handleGradeAnswer = (answerId, score) => {
-    setAnswers(answers.map(ans => ans.id === answerId ? { ...ans, calificacion: score } : ans));
+  const autoGradeNonResponders = async () => {
+    if (!session || !question || !players.length) return;
+    
+    // Students who need to answer (exclude the creator/drawer)
+    const activeStudents = players.filter(p => p.id !== session.turno_actual_usuario_id);
+    
+    // Find who hasn't answered
+    const nonResponders = activeStudents.filter(student => 
+      !answers.some(ans => ans.alumno_id === student.id)
+    );
+
+    if (nonResponders.length === 0) return;
+
+    if (demoMode) {
+      const mockInserts = nonResponders.map(student => ({
+        id: `ans-dummy-${student.id}`,
+        alumno_id: student.id,
+        nombre: student.nombre,
+        texto: '(No respondió)',
+        calificacion: 0
+      }));
+      setAnswers(prev => {
+        const existingIds = prev.map(a => a.alumno_id);
+        const filtered = mockInserts.filter(m => !existingIds.includes(m.alumno_id));
+        return [...prev, ...filtered];
+      });
+      return;
+    }
+
+    const inserts = nonResponders.map(student => ({
+      pregunta_id: question.id,
+      alumno_id: student.id,
+      texto: '(No respondió)',
+      calificacion: 0
+    }));
+
+    try {
+      const { error } = await supabase
+        .from('respuestas')
+        .insert(inserts);
+
+      if (error) {
+        console.error("Error auto-grading non-responders:", error);
+      } else {
+        fetchAnswers(question.id);
+      }
+    } catch (err) {
+      console.error("Crash in autoGradeNonResponders:", err);
+    }
+  };
+
+  const handleGradeAnswer = async (answerId, score) => {
+    // 1. Update local state immediately for instant feedback
+    setAnswers(prev => prev.map(ans => ans.id === answerId ? { ...ans, calificacion: score } : ans));
+
+    if (demoMode) return;
+
+    // 2. Persist to DB immediately
+    try {
+      const { error } = await supabase
+        .from('respuestas')
+        .update({ calificacion: score })
+        .eq('id', answerId);
+      if (error) {
+        console.error('Error updating grade in DB:', error);
+      }
+    } catch (err) {
+      console.error('Crash updating grade in DB:', err);
+    }
   };
 
   const handleFinishEvaluation = async () => {
     if (demoMode) {
+      // 1. Auto-insert "(No respondió)" for any student who hasn't answered yet in demo mode
+      const activeStudents = players.filter(p => p.id !== session.turno_actual_usuario_id);
+      const nonResponders = activeStudents.filter(student => 
+        !answers.some(ans => ans.alumno_id === student.id)
+      );
+      
+      let updatedAnswersList = [...answers];
+      if (nonResponders.length > 0) {
+        const mockInserts = nonResponders.map(student => ({
+          id: `ans-dummy-${student.id}`,
+          alumno_id: student.id,
+          nombre: student.nombre,
+          texto: '(No respondió)',
+          calificacion: 0
+        }));
+        updatedAnswersList = [...updatedAnswersList, ...mockInserts];
+      }
+
+      // Update mock rankings
+      for (const ans of updatedAnswersList) {
+        if (ans.calificacion > 0) {
+          setRankings(prev => prev.map(r => {
+            if (r.usuario_id === ans.alumno_id) {
+              return { ...r, puntaje_total: r.puntaje_total + ans.calificacion };
+            }
+            return r;
+          }));
+        }
+      }
+
       setSession(s => {
         const currentIndex = s.orden_turnos.indexOf(s.turno_actual_usuario_id);
         const nextIndex = (currentIndex + 1) % s.orden_turnos.length;
@@ -559,15 +663,55 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       return;
     }
 
-    // Save grades individually - failures don't block turn rotation
-    for (const ans of answers) {
+    // 1. Auto-grade non-responders in the DB (for safety if finished early)
+    const activeStudents = players.filter(p => p.id !== session.turno_actual_usuario_id);
+    const nonResponders = activeStudents.filter(student => 
+      !answers.some(ans => ans.alumno_id === student.id)
+    );
+
+    let updatedAnswersList = [...answers];
+
+    if (nonResponders.length > 0) {
+      const inserts = nonResponders.map(student => ({
+        pregunta_id: question.id,
+        alumno_id: student.id,
+        texto: '(No respondió)',
+        calificacion: 0
+      }));
+
+      const { data, error } = await supabase
+        .from('respuestas')
+        .insert(inserts)
+        .select();
+
+      if (!error && data) {
+        const formatted = data.map(ans => {
+          const student = nonResponders.find(s => s.id === ans.alumno_id);
+          return {
+            id: ans.id,
+            alumno_id: ans.alumno_id,
+            nombre: student?.nombre || student?.email || 'Alumno',
+            texto: ans.texto,
+            calificacion: ans.calificacion,
+            url_imagen: ans.url_imagen
+          };
+        });
+        updatedAnswersList = [...updatedAnswersList, ...formatted];
+      } else {
+        console.error("Error inserting non-responders answers:", error);
+      }
+    }
+
+    // Save grades and rankings individually - failures don't block turn rotation
+    for (const ans of updatedAnswersList) {
+      const finalGrade = typeof ans.calificacion === 'number' ? ans.calificacion : 0;
       try {
         await supabase
           .from('respuestas')
-          .update({ calificacion: ans.calificacion || 0 })
+          .update({ calificacion: finalGrade })
           .eq('id', ans.id);
 
-        if (ans.calificacion > 0) {
+        if (finalGrade > 0) {
           const { data: rank } = await supabase
             .from('rankings')
             .select('*')
@@ -578,7 +722,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           if (rank) {
             await supabase
               .from('rankings')
-              .update({ puntaje_total: rank.puntaje_total + ans.calificacion })
+              .update({ puntaje_total: rank.puntaje_total + finalGrade })
               .eq('id', rank.id);
           } else {
             await supabase
@@ -586,7 +730,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               .insert([{
                 curso_id: session.curso_id,
                 usuario_id: ans.alumno_id,
-                puntaje_total: ans.calificacion
+                puntaje_total: finalGrade
               }]);
           }
         }
@@ -1019,23 +1163,24 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           </h3>
           
           <div className="leaderboard-list">
-            {players.map((p, idx) => {
-              // Calculate demo points or total scores
-              // In live sessions we accumulate scores of correct answers
-              const points = rankings.find(r => r.email === p.email)?.puntaje_total || 0;
-              const isPodium = idx < 3;
-              const podiumClass = idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : '';
-
-              return (
-                <div key={p.id} className={`leaderboard-item ${podiumClass}`}>
-                  <div className="leaderboard-user">
-                    <span className="leaderboard-rank">#{idx + 1}</span>
-                    <span style={{ fontWeight: '700', fontSize: '14px' }}>{p.nombre}</span>
+            {[...players]
+              .map(p => {
+                const points = rankings.find(r => r.usuario_id === p.id)?.puntaje_total || 0;
+                return { ...p, points };
+              })
+              .sort((a, b) => b.points - a.points)
+              .map((p, idx) => {
+                const podiumClass = idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : '';
+                return (
+                  <div key={p.id} className={`leaderboard-item ${podiumClass}`}>
+                    <div className="leaderboard-user">
+                      <span className="leaderboard-rank">#{idx + 1}</span>
+                      <span style={{ fontWeight: '700', fontSize: '14px' }}>{p.nombre}</span>
+                    </div>
+                    <span className="leaderboard-points">{p.points} pts</span>
                   </div>
-                  <span className="leaderboard-points">{points} pts</span>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       </div>
