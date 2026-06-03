@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-import GeminiAssetGenerator from './GeminiAssetGenerator';
 import { 
   Trophy, Clock, Star, AirplaneTilt, PlayCircle
 } from '@phosphor-icons/react';
@@ -15,6 +14,12 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [rankings, setRankings] = useState([]);
+
+  // File Upload States
+  const [qFile, setQFile] = useState(null);
+  const [uploadingQFile, setUploadingQFile] = useState(false);
+  const [myAnswerFile, setMyAnswerFile] = useState(null);
+  const [uploadingAnswerFile, setUploadingAnswerFile] = useState(false);
   
   // Timer Ref & State
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes = 180s
@@ -63,13 +68,19 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   useEffect(() => {
     // Sync Timer
-    if (session?.estado === 'respuesta') {
-      startCountdown();
+    if (session?.estado === 'respuesta' && session?.temporizador_fin) {
+      startCountdown(session.temporizador_fin);
     } else {
       clearInterval(timerInterval.current);
     }
     return () => clearInterval(timerInterval.current);
-  }, [session?.estado]);
+  }, [session?.estado, session?.temporizador_fin]);
+
+  useEffect(() => {
+    if (question?.id && !demoMode) {
+      fetchAnswers();
+    }
+  }, [question?.id, demoMode]);
 
   // Demo Mode Simulation Logic
   useEffect(() => {
@@ -114,19 +125,80 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   }, [session?.estado, session?.turno_actual_usuario_id, demoMode]);
 
-  const startCountdown = () => {
+  const startCountdown = (endTimeString) => {
     clearInterval(timerInterval.current);
-    timerInterval.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timerInterval.current);
-          // Auto block inputs and switch to evaluation
-          setSession(s => ({ ...s, estado: 'evaluacion' }));
-          return 0;
+    if (demoMode) {
+      // In demo mode, count down from 180s normally
+      timerInterval.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerInterval.current);
+            setSession(s => ({ ...s, estado: 'evaluacion' }));
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return;
+    }
+
+    if (!endTimeString) return;
+
+    const tick = () => {
+      const endTime = new Date(endTimeString).getTime();
+      const now = Date.now();
+      const left = Math.floor((endTime - now) / 1000);
+
+      if (left <= 0) {
+        clearInterval(timerInterval.current);
+        setTimeLeft(0);
+        
+        // Auto block inputs and switch to evaluation (only for drawer/creator to avoid double-update collisions)
+        if (isMyTurn) {
+          supabase
+            .from('sesiones_juego')
+            .update({ estado: 'evaluacion' })
+            .eq('id', sessionId);
         }
-        return prev - 1;
-      });
-    }, 1000);
+      } else {
+        setTimeLeft(left);
+      }
+    };
+
+    tick(); // Run immediately on start
+    timerInterval.current = setInterval(tick, 1000);
+  };
+
+  const handleFileUpload = async (file, path) => {
+    if (!file) return null;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${path}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('quiz-assets')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage
+      .from('quiz-assets')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  const isImageFile = (url) => {
+    if (!url) return false;
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    return cleanUrl.endsWith('.png') || 
+           cleanUrl.endsWith('.jpg') || 
+           cleanUrl.endsWith('.jpeg') || 
+           cleanUrl.endsWith('.gif') || 
+           cleanUrl.endsWith('.webp') || 
+           cleanUrl.endsWith('.svg');
   };
 
   const fetchSessionDetails = async () => {
@@ -144,6 +216,30 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     if (sess.pregunta_actual_id) {
       const { data: q } = await supabase.from('preguntas').select('*').eq('id', sess.pregunta_actual_id).single();
       setQuestion(q);
+      
+      // Load current answers on load/refresh
+      const { data: ansList } = await supabase
+        .from('respuestas')
+        .select('*, perfiles_usuarios(nombre, email)')
+        .eq('pregunta_id', q.id);
+      if (ansList) {
+        setAnswers(ansList.map(ans => ({
+          id: ans.id,
+          alumno_id: ans.alumno_id,
+          nombre: ans.perfiles_usuarios?.nombre || ans.perfiles_usuarios?.email,
+          texto: ans.texto,
+          calificacion: ans.calificacion,
+          url_imagen: ans.url_imagen
+        })));
+      }
+    }
+
+    // Set initial timer timeLeft if session is in progress
+    if (sess.estado === 'respuesta' && sess.temporizador_fin) {
+      const endTime = new Date(sess.temporizador_fin).getTime();
+      const now = Date.now();
+      const left = Math.floor((endTime - now) / 1000);
+      setTimeLeft(left > 0 ? left : 0);
     }
 
     // Fetch initial rankings
@@ -166,6 +262,12 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         setSession(payload.new);
         if (payload.new.pregunta_actual_id) {
           fetchQuestion(payload.new.pregunta_actual_id);
+        }
+        if (payload.new.estado === 'respuesta' && payload.new.temporizador_fin) {
+          const endTime = new Date(payload.new.temporizador_fin).getTime();
+          const now = Date.now();
+          const left = Math.floor((endTime - now) / 1000);
+          setTimeLeft(left > 0 ? left : 0);
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'preguntas' }, payload => {
@@ -221,7 +323,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         alumno_id: ans.alumno_id,
         nombre: ans.perfiles_usuarios?.nombre || ans.perfiles_usuarios?.email,
         texto: ans.texto,
-        calificacion: ans.calificacion
+        calificacion: ans.calificacion,
+        url_imagen: ans.url_imagen
       })));
     }
   };
@@ -257,7 +360,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       const mockQ = {
         id: `q-${Date.now()}`,
         texto: qText,
-        url_imagen: qImage || null,
+        url_imagen: null,
         respuesta_correcta: qAnswer
       };
       setQuestion(mockQ);
@@ -265,11 +368,17 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       setTimeLeft(180);
       setQText('');
       setQAnswer('');
-      setQImage('');
+      setQFile(null);
       return;
     }
 
     try {
+      setUploadingQFile(true);
+      let uploadedUrl = null;
+      if (qFile) {
+        uploadedUrl = await handleFileUpload(qFile, 'questions');
+      }
+
       // Real Supabase insert
       const { data: newQ, error: qErr } = await supabase
         .from('preguntas')
@@ -277,26 +386,32 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           sesion_id: sessionId,
           creador_id: profile.id,
           texto: qText,
-          url_imagen: qImage || null,
+          url_imagen: uploadedUrl,
           respuesta_correcta: qAnswer
         }])
         .select();
 
       if (qErr) {
         alert("Error al enviar pregunta: " + qErr.message);
+        setUploadingQFile(false);
         return;
       }
 
       if (!newQ || newQ.length === 0) {
         alert("Error: No se pudo registrar la pregunta. RLS policy error.");
+        setUploadingQFile(false);
         return;
       }
+
+      // Set countdown end time 3 minutes from now
+      const endTime = new Date(Date.now() + 180 * 1000).toISOString();
 
       const { error: sErr } = await supabase
         .from('sesiones_juego')
         .update({
           estado: 'respuesta',
-          pregunta_actual_id: newQ[0].id
+          pregunta_actual_id: newQ[0].id,
+          temporizador_fin: endTime
         })
         .eq('id', sessionId);
       
@@ -305,11 +420,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       } else {
         setQText('');
         setQAnswer('');
-        setQImage('');
+        setQFile(null);
       }
     } catch (err) {
       console.error("Crash submitting question:", err);
       alert("Error inesperado al enviar la pregunta: " + err.message);
+    } finally {
+      setUploadingQFile(false);
     }
   };
 
@@ -327,29 +444,39 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       };
       setAnswers([...answers, myAns]);
       setMyAnswerText('');
+      setMyAnswerFile(null);
       return;
     }
 
     try {
+      setUploadingAnswerFile(true);
+      let uploadedUrl = null;
+      if (myAnswerFile) {
+        uploadedUrl = await handleFileUpload(myAnswerFile, 'answers');
+      }
+
       const { error } = await supabase
         .from('respuestas')
         .insert([{
           pregunta_id: question.id,
           alumno_id: profile.id,
           texto: myAnswerText,
-          url_imagen: myAnswerImage || null
+          url_imagen: uploadedUrl
         }]);
       
       if (error) {
         alert("Error al responder: " + error.message);
       } else {
         setMyAnswerText('');
+        setMyAnswerFile(null);
         alert("¡Respuesta enviada!");
         fetchAnswers();
       }
     } catch (err) {
       console.error("Crash submitting answer:", err);
       alert("Error inesperado al enviar la respuesta: " + err.message);
+    } finally {
+      setUploadingAnswerFile(false);
     }
   };
 
@@ -541,7 +668,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               {isMyTurn ? (
                 <div>
                   <p className="stage-description">
-                    ¡Es tu turno de desafiar a tus compañeros! Escribe una pregunta inteligente y su respuesta esperada.
+                    ¡Es tu turno de desafiar a tus compañeros! Escribe una pregunta inteligente y añade un archivo de apoyo si lo deseas.
                   </p>
                   
                   <form onSubmit={handleSubmitQuestion}>
@@ -554,15 +681,20 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                         value={qText}
                         onChange={(e) => setQText(e.target.value)}
                         required
+                        disabled={uploadingQFile}
                         style={{ resize: 'none' }}
                       />
                     </div>
 
-                    {/* Gemini AI asset generator integrations */}
-                    <GeminiAssetGenerator 
-                      type="pregunta" 
-                      onAssetGenerated={(url) => setQImage(url)} 
-                    />
+                    <div className="form-group">
+                      <label className="form-label">Adjuntar Archivo Complementario (Opcional - Imagen, PDF, Documento)</label>
+                      <input 
+                        type="file" 
+                        className="form-input"
+                        onChange={(e) => setQFile(e.target.files[0])}
+                        disabled={uploadingQFile}
+                      />
+                    </div>
 
                     <div className="form-group">
                       <label className="form-label">Respuesta Correcta Esperada</label>
@@ -573,20 +705,21 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                         value={qAnswer}
                         onChange={(e) => setQAnswer(e.target.value)}
                         required
+                        disabled={uploadingQFile}
                       />
                     </div>
 
-                    <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>
-                      <AirplaneTilt weight="fill" /> Enviar Pregunta al Aula
+                    <button className="btn btn-primary" type="submit" style={{ width: '100%' }} disabled={uploadingQFile}>
+                      {uploadingQFile ? 'Subiendo archivo y pregunta...' : 'Enviar Pregunta al Aula'}
                     </button>
                   </form>
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <div className="user-avatar" style={{ width: '64px', height: '64px', fontSize: '28px', margin: '0 auto 16px' }}>
-                    {currentDrawer?.nombre[0]}
+                    {currentDrawer?.nombre ? currentDrawer.nombre[0] : 'U'}
                   </div>
-                  <h3 style={{ marginBottom: '8px' }}>Esperando a {currentDrawer?.nombre}</h3>
+                  <h3 style={{ marginBottom: '8px' }}>Esperando a {currentDrawer?.nombre || 'compañero'}</h3>
                   <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto' }}>
                     Está redactando la pregunta en este momento. ¡Prepara tus conocimientos!
                   </p>
@@ -608,8 +741,20 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               <h2 className="stage-title">{question.texto}</h2>
               
               {question.url_imagen && (
-                <div style={{ margin: '20px 0', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-light)', maxWidth: '450px' }}>
-                  <img src={question.url_imagen} alt="Material de pregunta" style={{ width: '100%', display: 'block' }} />
+                <div style={{ margin: '20px 0', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#f8fafc', maxWidth: '450px' }}>
+                  {isImageFile(question.url_imagen) ? (
+                    <img src={question.url_imagen} alt="Archivo adjunto de la pregunta" style={{ width: '100%', borderRadius: 'var(--radius-sm)', display: 'block' }} />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '24px' }}>📎</span>
+                      <div>
+                        <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>Archivo adjunto de pregunta</div>
+                        <a href={question.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--brand)', fontWeight: '700', textDecoration: 'underline' }}>
+                          Descargar / Ver archivo
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -630,7 +775,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                   ) : (
                     <form onSubmit={handleSubmitAnswer}>
                       <div className="form-group">
-                        <label className="form-label">Tu Respuesta</label>
+                        <label className="form-label">Tu Respuesta (Texto)</label>
                         <input 
                           type="text" 
                           className="form-input" 
@@ -638,11 +783,22 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                           value={myAnswerText}
                           onChange={(e) => setMyAnswerText(e.target.value)}
                           required
-                          disabled={timeLeft === 0}
+                          disabled={timeLeft === 0 || uploadingAnswerFile}
                         />
                       </div>
-                      <button className="btn btn-primary" type="submit" style={{ width: '100%' }} disabled={timeLeft === 0}>
-                        Enviar Respuesta
+
+                      <div className="form-group">
+                        <label className="form-label">Adjuntar Archivo de Respuesta (Opcional - Foto, PDF, etc.)</label>
+                        <input 
+                          type="file" 
+                          className="form-input"
+                          onChange={(e) => setMyAnswerFile(e.target.files[0])}
+                          disabled={timeLeft === 0 || uploadingAnswerFile}
+                        />
+                      </div>
+
+                      <button className="btn btn-primary" type="submit" style={{ width: '100%' }} disabled={timeLeft === 0 || uploadingAnswerFile}>
+                        {uploadingAnswerFile ? 'Subiendo respuesta y archivo...' : 'Enviar Respuesta'}
                       </button>
                     </form>
                   )}
@@ -670,7 +826,25 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                           <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
                             Respuesta de {ans.nombre}:
                           </div>
-                          <div style={{ fontSize: '16px', fontWeight: '800' }}>"{ans.texto}"</div>
+                          <div style={{ fontSize: '16px', fontWeight: '800', marginBottom: '6px' }}>"{ans.texto}"</div>
+
+                          {/* Render student uploaded file */}
+                          {ans.url_imagen && (
+                            <div style={{ padding: '8px 12px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', display: 'inline-block', marginTop: '6px', maxWidth: '300px' }}>
+                              {isImageFile(ans.url_imagen) ? (
+                                <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer">
+                                  <img src={ans.url_imagen} alt="Respuesta adjunta" style={{ maxWidth: '100%', maxHeight: '120px', borderRadius: '4px', display: 'block' }} />
+                                </a>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>📎</span>
+                                  <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', fontWeight: '700', textDecoration: 'underline' }}>
+                                    Ver archivo adjunto
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <div className="grading-buttons">
