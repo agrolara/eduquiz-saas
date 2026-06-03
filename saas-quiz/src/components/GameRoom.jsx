@@ -24,6 +24,11 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   // Timer Ref & State
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes = 180s
   const timerInterval = useRef(null);
+  const activeQuestionIdRef = useRef(null);
+
+  useEffect(() => {
+    activeQuestionIdRef.current = question?.id;
+  }, [question?.id]);
 
   // Forms
   const [qText, setQText] = useState('');
@@ -277,7 +282,9 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'respuestas' }, payload => {
-        fetchAnswers(payload.new.pregunta_id);
+        if (activeQuestionIdRef.current && payload.new.pregunta_id === activeQuestionIdRef.current) {
+          fetchAnswers(activeQuestionIdRef.current);
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => {
         fetchRankings();
