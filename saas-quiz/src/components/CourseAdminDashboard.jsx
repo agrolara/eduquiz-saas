@@ -331,179 +331,187 @@ export default function CourseAdminDashboard({ onStartSession }) {
   return (
     <div className="course-admin-dashboard">
       <header style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', color: 'var(--brand-dark)' }}>Panel del Administrador de Curso</h1>
+        <h1 style={{ fontSize: '32px', color: 'var(--brand-dark)', fontFamily: 'var(--font-display)', fontWeight: '800' }}>Panel del Administrador de Curso</h1>
         <p style={{ color: 'var(--text-muted)' }}>
           Gestionando tu curso. Asegura que los alumnos estén en la lista para ingresar.
         </p>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '32px' }}>
+      <div className="admin-grid">
         
         {/* Whitelist Panel */}
-        <div className="card">
-          <h2 className="card-title">
-            <Shield size={24} weight="fill" color="var(--brand)" />
-            Alumnos Permitidos (Whitelist)
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
-            Solo los alumnos cuyos correos estén registrados aquí tendrán acceso a las salas de juego.
-          </p>
+        <div className="double-bezel-outer">
+          <div className="double-bezel-inner">
+            <h2 className="card-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>
+              <Shield size={24} weight="fill" color="var(--brand)" />
+              Alumnos Permitidos (Whitelist)
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
+              Solo los alumnos cuyos correos estén registrados aquí tendrán acceso a las salas de juego.
+            </p>
 
-          <form onSubmit={handleAddWhitelist} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            <input 
-              type="email" 
-              className="form-input" 
-              placeholder="alumno@colegio.cl"
-              value={newStudentEmail}
-              onChange={(e) => setNewStudentEmail(e.target.value)}
-              required
-            />
-            <button className="btn btn-primary" type="submit">
-              <UserPlus weight="bold" /> Invitar
-            </button>
-          </form>
+            <form onSubmit={handleAddWhitelist} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+              <input 
+                type="email" 
+                className="form-input" 
+                placeholder="alumno@colegio.cl"
+                value={newStudentEmail}
+                onChange={(e) => setNewStudentEmail(e.target.value)}
+                required
+              />
+              <button className="btn btn-primary" type="submit">
+                <UserPlus weight="bold" /> Invitar
+              </button>
+            </form>
 
-          <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Correo Invitado</th>
-                  <th style={{ textAlign: 'right' }}>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {whitelist.map(student => (
-                  <tr key={student.id}>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>{student.email}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button 
-                        onClick={(e) => handleDeleteWhitelist(student.id, e)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--danger)',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Trash size={18} />
-                      </button>
-                    </td>
+            <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Correo Invitado</th>
+                    <th style={{ textAlign: 'right' }}>Acción</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {whitelist.map(student => (
+                    <tr key={student.id}>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>{student.email}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button 
+                          onClick={(e) => handleDeleteWhitelist(student.id, e)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--danger)',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Trash size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
         {/* Sessions & Leaderboards */}
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {/* Game Sessions Block */}
-          <div className="card">
-            <h2 className="card-title">
-              <Play size={24} weight="fill" color="var(--brand)" />
-              Sesiones de Juego
-            </h2>
-            
-            <form onSubmit={handleCreateSession} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Nombre de la nueva partida (ej. Desafío del Saber)"
-                value={newSessionName}
-                onChange={(e) => setNewSessionName(e.target.value)}
-                required
-              />
-              <button className="btn btn-primary" type="submit">
-                <Play weight="fill" /> Iniciar Partida
-              </button>
-            </form>
+          <div className="double-bezel-outer">
+            <div className="double-bezel-inner">
+              <h2 className="card-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>
+                <Play size={24} weight="fill" color="var(--brand)" />
+                Sesiones de Juego
+              </h2>
+              
+              <form onSubmit={handleCreateSession} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Nombre de la nueva partida (ej. Desafío del Saber)"
+                  value={newSessionName}
+                  onChange={(e) => setNewSessionName(e.target.value)}
+                  required
+                />
+                <button className="btn btn-primary" type="submit">
+                  <Play weight="fill" /> Iniciar Partida
+                </button>
+              </form>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {sessions.map(session => (
-                <div 
-                  key={session.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px',
-                    backgroundColor: 'var(--bg-page)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-light)'
-                  }}
-                >
-                  <div>
-                    <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{session.nombre}</h4>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Creado: {session.creado_en}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {sessions.map(session => (
+                  <div 
+                    key={session.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px',
+                      backgroundColor: 'var(--bg-page)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-light)'
+                    }}
+                  >
+                    <div>
+                      <h4 style={{ fontSize: '16px', fontWeight: '800' }}>{session.nombre}</h4>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Creado: {session.creado_en}</span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      {session.estado === 'finalizado' ? (
+                        <span className="tag tag-success">Terminado</span>
+                      ) : (
+                        <>
+                          <span className="tag tag-warning">Esperando alumnos</span>
+                          <button 
+                            className="btn btn-primary" 
+                            style={{ padding: '8px 14px', fontSize: '13px' }}
+                            onClick={() => onStartSession(session.id, session.nombre)}
+                          >
+                            Entrar
+                          </button>
+                        </>
+                      )}
+                      <button 
+                        className="btn btn-secondary" 
+                        style={{ padding: '8px 10px', fontSize: '13px', borderColor: 'var(--danger)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        onClick={() => handleDeleteSession(session.id, session.nombre)}
+                        title="Eliminar sesión y liberar archivos de imagen"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    {session.estado === 'finalizado' ? (
-                      <span className="tag tag-success">Terminado</span>
-                    ) : (
-                      <>
-                        <span className="tag tag-warning">Esperando alumnos</span>
-                        <button 
-                          className="btn btn-primary" 
-                          style={{ padding: '8px 14px', fontSize: '13px' }}
-                          onClick={() => onStartSession(session.id, session.nombre)}
-                        >
-                          Entrar
-                        </button>
-                      </>
-                    )}
-                    <button 
-                      className="btn btn-secondary" 
-                      style={{ padding: '8px 10px', fontSize: '13px', borderColor: 'var(--danger)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      onClick={() => handleDeleteSession(session.id, session.nombre)}
-                      title="Eliminar sesión y liberar archivos de imagen"
-                    >
-                      <Trash size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Global Course Leaderboard */}
-          <div className="card">
-            <h2 className="card-title">
-              <Trophy size={24} weight="fill" color="var(--brand)" />
-              Histórico de Rankings (Curso)
-            </h2>
-            
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Rango</th>
-                  <th>Alumno</th>
-                  <th>Correo</th>
-                  <th style={{ textAlign: 'center' }}>Partidas Jugadas</th>
-                  <th style={{ textAlign: 'right' }}>Puntos Totales</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rankings.map((student, index) => (
-                  <tr key={student.id}>
-                    <td style={{ fontWeight: '800' }}>#{index + 1}</td>
-                    <td>
-                      <div style={{ fontWeight: '700' }}>{student.nombre}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        {student.historial_participacion && student.historial_participacion.length > 0 ? (
-                          <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
-                        ) : (
-                          <span>Sin participación registrada</span>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{student.email}</td>
-                    <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
-                    <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--brand)' }}>{student.puntaje_total} pts</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="double-bezel-outer">
+            <div className="double-bezel-inner">
+              <h2 className="card-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>
+                <Trophy size={24} weight="fill" color="var(--brand)" />
+                Histórico de Rankings (Curso)
+              </h2>
+              
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Rango</th>
+                      <th>Alumno</th>
+                      <th>Correo</th>
+                      <th style={{ textAlign: 'center' }}>Partidas Jugadas</th>
+                      <th style={{ textAlign: 'right' }}>Puntos Totales</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rankings.map((student, index) => (
+                      <tr key={student.id}>
+                        <td style={{ fontWeight: '800' }}>#{index + 1}</td>
+                        <td>
+                          <div style={{ fontWeight: '700' }}>{student.nombre}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            {student.historial_participacion && student.historial_participacion.length > 0 ? (
+                              <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
+                            ) : (
+                              <span>Sin participación registrada</span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{student.email}</td>
+                        <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
+                        <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--brand)' }}>{student.puntaje_total} pts</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -511,3 +519,4 @@ export default function CourseAdminDashboard({ onStartSession }) {
     </div>
   );
 }
+

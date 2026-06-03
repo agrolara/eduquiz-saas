@@ -911,147 +911,252 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           
           {/* WAITING PHASE */}
           {session.estado === 'esperando' && (
-            <div className="stage-card" style={{ textAlign: 'center', padding: '60px 40px' }}>
-              <PlayCircle size={64} color="var(--brand)" style={{ marginBottom: '16px' }} />
-              <h2 className="stage-title">¡Bienvenidos a la Sala de Espera!</h2>
-              <p className="stage-description">
-                Estamos esperando a que todos los compañeros se conecten a la sesión.
-              </p>
+            <div className="double-bezel-outer">
+              <div className="double-bezel-inner" style={{ textAlign: 'center', padding: '40px 24px' }}>
+                <PlayCircle size={64} color="var(--brand)" style={{ marginBottom: '16px', display: 'inline-block' }} />
+                <h2 className="stage-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>¡Bienvenidos a la Sala de Espera!</h2>
+                <p className="stage-description">
+                  Estamos esperando a que todos los compañeros se conecten a la sesión.
+                </p>
 
-              <div style={{ maxWidth: '400px', margin: '0 auto 32px' }}>
-                <h4 style={{ marginBottom: '12px', textAlign: 'left' }}>Jugadores en línea ({players.length}):</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  {players.map(p => (
-                    <div key={p.id} className="user-profile-badge" style={{ justifyContent: 'center' }}>
-                      <span className="user-avatar">{p.nombre[0]}</span>
-                      <span style={{ fontSize: '13px', fontWeight: '700' }}>{p.nombre}</span>
-                    </div>
-                  ))}
+                <div style={{ maxWidth: '400px', margin: '0 auto 32px' }}>
+                  <h4 style={{ marginBottom: '12px', textAlign: 'left', fontWeight: '800' }}>Jugadores en línea ({players.length}):</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {players.map(p => (
+                      <div key={p.id} className="user-profile-badge" style={{ justifyContent: 'center' }}>
+                        <span className="user-avatar">{p.nombre[0]}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700' }}>{p.nombre}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {(profile.rol === 'admin_curso' || profile.rol === 'super_admin' || players.length > 0) && (
-                <button className="btn btn-primary" onClick={handleStartGame}>
-                  Iniciar Desafío Trivia
-                </button>
-              )}
+                {(profile.rol === 'admin_curso' || profile.rol === 'super_admin' || players.length > 0) && (
+                  <button className="btn btn-primary" onClick={handleStartGame}>
+                    Iniciar Desafío Trivia
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
           {/* QUESTION PHASE */}
           {session.estado === 'pregunta' && (
-            <div className="stage-card">
-              <h2 className="stage-title">Fase de Pregunta</h2>
-              
-              {isMyTurn ? (
-                <div>
-                  <p className="stage-description">
-                    ¡Es tu turno de desafiar a tus compañeros! Escribe una pregunta inteligente y añade un archivo de apoyo si lo deseas.
-                  </p>
-                  
-                  <form onSubmit={handleSubmitQuestion}>
-                    <div className="form-group">
-                      <label className="form-label">Escribe tu Pregunta</label>
-                      <textarea 
-                        className="form-input" 
-                        rows="3"
-                        placeholder="Ej: ¿Cuál es el planeta más cercano al Sol?"
-                        value={qText}
-                        onChange={(e) => setQText(e.target.value)}
-                        required
-                        disabled={uploadingQFile}
-                        style={{ resize: 'none' }}
-                      />
-                    </div>
+            <div className="double-bezel-outer">
+              <div className="double-bezel-inner">
+                <h2 className="stage-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>Fase de Pregunta</h2>
+                
+                {isMyTurn ? (
+                  <div>
+                    <p className="stage-description">
+                      ¡Es tu turno de desafiar a tus compañeros! Escribe una pregunta inteligente y añade un archivo de apoyo si lo deseas.
+                    </p>
+                    
+                    <form onSubmit={handleSubmitQuestion}>
+                      <div className="form-group">
+                        <label className="form-label">Escribe tu Pregunta</label>
+                        <textarea 
+                          className="form-input" 
+                          rows="3"
+                          placeholder="Ej: ¿Cuál es el planeta más cercano al Sol?"
+                          value={qText}
+                          onChange={(e) => setQText(e.target.value)}
+                          required
+                          disabled={uploadingQFile}
+                          style={{ resize: 'none' }}
+                        />
+                      </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Adjuntar Archivo Complementario (Opcional - Imagen, PDF, Documento)</label>
-                      <input 
-                        type="file" 
-                        className="form-input"
-                        onChange={(e) => setQFile(e.target.files[0])}
-                        disabled={uploadingQFile}
-                      />
-                    </div>
+                      <div className="form-group">
+                        <label className="form-label">Adjuntar Archivo Complementario (Opcional - Imagen, PDF, Documento)</label>
+                        <input 
+                          type="file" 
+                          className="form-input"
+                          onChange={(e) => setQFile(e.target.files[0])}
+                          disabled={uploadingQFile}
+                        />
+                      </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Respuesta Correcta Esperada</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Ej: Mercurio"
-                        value={qAnswer}
-                        onChange={(e) => setQAnswer(e.target.value)}
-                        required
-                        disabled={uploadingQFile}
-                      />
-                    </div>
+                      <div className="form-group">
+                        <label className="form-label">Respuesta Correcta Esperada</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="Ej: Mercurio"
+                          value={qAnswer}
+                          onChange={(e) => setQAnswer(e.target.value)}
+                          required
+                          disabled={uploadingQFile}
+                        />
+                      </div>
 
-                    <button className="btn btn-primary" type="submit" style={{ width: '100%' }} disabled={uploadingQFile}>
-                      {uploadingQFile ? 'Subiendo archivo y pregunta...' : 'Enviar Pregunta al Aula'}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <div className="user-avatar" style={{ width: '64px', height: '64px', fontSize: '28px', margin: '0 auto 16px' }}>
-                    {currentDrawer?.nombre ? currentDrawer.nombre[0] : 'U'}
+                      <button className="btn btn-primary" type="submit" style={{ width: '100%', justifyContent: 'center' }} disabled={uploadingQFile}>
+                        {uploadingQFile ? 'Subiendo archivo y pregunta...' : 'Enviar Pregunta al Aula'}
+                      </button>
+                    </form>
                   </div>
-                  <h3 style={{ marginBottom: '8px' }}>Esperando a {currentDrawer?.nombre || 'compañero'}</h3>
-                  <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto' }}>
-                    Está redactando la pregunta en este momento. ¡Prepara tus conocimientos!
-                  </p>
-                </div>
-              )}
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <div className="user-avatar" style={{ width: '64px', height: '64px', fontSize: '28px', margin: '0 auto 16px' }}>
+                      {currentDrawer?.nombre ? currentDrawer.nombre[0] : 'U'}
+                    </div>
+                    <h3 style={{ marginBottom: '8px', fontWeight: '800' }}>Esperando a {currentDrawer?.nombre || 'compañero'}</h3>
+                    <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto' }}>
+                      Está redactando la pregunta en este momento. ¡Prepara tus conocimientos!
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {/* ANSWER PHASE */}
           {session.estado === 'respuesta' && question && (
-            <div className="stage-card">
+            <div className="double-bezel-outer" style={{ position: 'relative' }}>
               {/* Synchronous 3-minute timer bubble */}
               <div className="timer-bubble">
                 <Clock weight="fill" />
                 {formatTime(timeLeft)}
               </div>
 
-              <span className="tag tag-success" style={{ marginBottom: '12px' }}>Pregunta Activa</span>
-              <h2 className="stage-title">{question.texto}</h2>
-              
-              {question.url_imagen && (
-                <div style={{ margin: '20px 0', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#f8fafc', maxWidth: '450px' }}>
-                  {isImageFile(question.url_imagen) ? (
-                    <img src={question.url_imagen} alt="Archivo adjunto de la pregunta" style={{ width: '100%', borderRadius: 'var(--radius-sm)', display: 'block' }} />
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '24px' }}>📎</span>
-                      <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>Archivo adjunto de pregunta</div>
-                        <a href={question.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--brand)', fontWeight: '700', textDecoration: 'underline' }}>
-                          Descargar / Ver archivo
-                        </a>
+              <div className="double-bezel-inner" style={{ paddingTop: '40px' }}>
+                <span className="tag tag-success" style={{ marginBottom: '12px', width: 'fit-content' }}>Pregunta Activa</span>
+                <h2 className="stage-title" style={{ color: 'var(--text-main)', fontSize: '28px', fontFamily: 'var(--font-display)', fontWeight: '800', lineHeight: '1.2', marginBottom: '20px' }}>{question.texto}</h2>
+                
+                {question.url_imagen && (
+                  <div style={{ margin: '20px 0', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#f8fafc', maxWidth: '450px' }}>
+                    {isImageFile(question.url_imagen) ? (
+                      <img src={question.url_imagen} alt="Archivo adjunto de la pregunta" style={{ width: '100%', borderRadius: 'var(--radius-sm)', display: 'block' }} />
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '24px' }}>📎</span>
+                        <div>
+                          <div style={{ fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>Archivo adjunto de pregunta</div>
+                          <a href={question.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'var(--brand)', fontWeight: '700', textDecoration: 'underline' }}>
+                            Descargar / Ver archivo
+                          </a>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {isMyTurn ? (
-                <div>
-                  <div style={{ backgroundColor: 'var(--brand-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-focus)', marginBottom: '20px' }}>
-                    <h4 style={{ color: 'var(--brand-dark)', marginBottom: '4px', fontSize: '14px' }}>Tu respuesta correcta:</h4>
-                    <p style={{ fontWeight: '700', fontSize: '16px', margin: 0 }}>{question.respuesta_correcta}</p>
+                    )}
                   </div>
+                )}
 
-                  <h3 style={{ fontSize: '16px', marginBottom: '12px' }}>
-                    Respuestas recibidas ({answers.filter(a => a.alumno_id !== profile.id).length}):
-                  </h3>
+                {isMyTurn ? (
+                  <div>
+                    <div style={{ backgroundColor: 'var(--brand-light)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-focus)', marginBottom: '20px' }}>
+                      <h4 style={{ color: 'var(--brand-dark)', marginBottom: '4px', fontSize: '14px', fontWeight: '800' }}>Tu respuesta correcta:</h4>
+                      <p style={{ fontWeight: '700', fontSize: '16px', margin: 0 }}>{question.respuesta_correcta}</p>
+                    </div>
 
-                  {answers.filter(ans => ans.alumno_id !== profile.id).length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '24px 0' }}>
-                      Esperando respuestas de tus compañeros...
-                    </p>
-                  ) : (
+                    <h3 style={{ fontSize: '16px', marginBottom: '12px', fontWeight: '800' }}>
+                      Respuestas recibidas ({answers.filter(a => a.alumno_id !== profile.id).length}):
+                    </h3>
+
+                    {answers.filter(ans => ans.alumno_id !== profile.id).length === 0 ? (
+                      <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '24px 0' }}>
+                        Esperando respuestas de tus compañeros...
+                      </p>
+                    ) : (
+                      <div className="grading-panel">
+                        {answers.filter(ans => ans.alumno_id !== profile.id).map(ans => (
+                          <div key={ans.id} className="grading-item">
+                            <div>
+                              <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                                Respuesta de {ans.nombre}:
+                              </div>
+                              <div style={{ fontSize: '16px', fontWeight: '800', marginBottom: '6px' }}>"{ans.texto}"</div>
+                              {ans.url_imagen && (
+                                <div style={{ padding: '8px 12px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', display: 'inline-block', marginTop: '6px', maxWidth: '300px' }}>
+                                  {isImageFile(ans.url_imagen) ? (
+                                    <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer">
+                                      <img src={ans.url_imagen} alt="Respuesta adjunta" style={{ maxWidth: '100%', maxHeight: '120px', borderRadius: '4px', display: 'block' }} />
+                                    </a>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span>📎</span>
+                                      <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', fontWeight: '700', textDecoration: 'underline' }}>
+                                        Ver archivo adjunto
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="grading-buttons">
+                              <button className={`grade-btn grade-btn-bad ${ans.calificacion === 0 ? 'selected' : ''}`} onClick={() => handleGradeAnswer(ans.id, 0)}>Mala (0 pt)</button>
+                              <button className={`grade-btn grade-btn-mid ${ans.calificacion === 5 ? 'selected' : ''}`} onClick={() => handleGradeAnswer(ans.id, 5)}>Regular (5 pt)</button>
+                              <button className={`grade-btn grade-btn-good ${ans.calificacion === 10 ? 'selected' : ''}`} onClick={() => handleGradeAnswer(ans.id, 10)}>Buena (10 pt)</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {answers.filter(a => a.alumno_id !== profile.id).length > 0 && (
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={handleFinishEvaluation}
+                        style={{ width: '100%', marginTop: '24px', justifyContent: 'center' }}
+                      >
+                        Finalizar Ronda & Siguiente Turno
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    {answers.some(ans => ans.alumno_id === profile.id) ? (
+                      <div style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)', padding: '16px', borderRadius: 'var(--radius-md)', fontWeight: '800', textAlign: 'center' }}>
+                        ✓ ¡Respuesta enviada con éxito! Esperando que termine el tiempo o evalúe el creador.
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSubmitAnswer}>
+                        <div className="form-group">
+                          <label className="form-label">Tu Respuesta (Texto)</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            placeholder="Escribe tu respuesta aquí..."
+                            value={myAnswerText}
+                            onChange={(e) => setMyAnswerText(e.target.value)}
+                            required
+                            disabled={timeLeft === 0 || uploadingAnswerFile}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Adjuntar Archivo de Respuesta (Opcional - Foto, PDF, etc.)</label>
+                          <input 
+                            type="file" 
+                            className="form-input"
+                            onChange={(e) => setMyAnswerFile(e.target.files[0])}
+                            disabled={timeLeft === 0 || uploadingAnswerFile}
+                          />
+                        </div>
+
+                        <button className="btn btn-primary" type="submit" style={{ width: '100%', justifyContent: 'center' }} disabled={timeLeft === 0 || uploadingAnswerFile}>
+                          {uploadingAnswerFile ? 'Subiendo respuesta y archivo...' : 'Enviar Respuesta'}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* EVALUATION PHASE */}
+          {session.estado === 'evaluacion' && (
+            <div className="double-bezel-outer">
+              <div className="double-bezel-inner">
+                <h2 className="stage-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>Fase de Calificación</h2>
+                <p className="stage-description">
+                  La respuesta correcta esperada era: <strong style={{ color: 'var(--success)' }}>{question?.respuesta_correcta}</strong>
+                </p>
+
+                {isMyTurn ? (
+                  <div>
+                    <h3 style={{ fontSize: '18px', marginBottom: '16px', fontWeight: '800' }}>Califica las respuestas de tus compañeros:</h3>
+                    
                     <div className="grading-panel">
                       {answers.filter(ans => ans.alumno_id !== profile.id).map(ans => (
                         <div key={ans.id} className="grading-item">
@@ -1060,6 +1165,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                               Respuesta de {ans.nombre}:
                             </div>
                             <div style={{ fontSize: '16px', fontWeight: '800', marginBottom: '6px' }}>"{ans.texto}"</div>
+
+                            {/* Render student uploaded file */}
                             {ans.url_imagen && (
                               <div style={{ padding: '8px 12px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', display: 'inline-block', marginTop: '6px', maxWidth: '300px' }}>
                                 {isImageFile(ans.url_imagen) ? (
@@ -1077,153 +1184,51 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                               </div>
                             )}
                           </div>
+
                           <div className="grading-buttons">
-                            <button className="grade-btn grade-btn-bad" onClick={() => handleGradeAnswer(ans.id, 0)} style={{ opacity: ans.calificacion === 0 ? 1 : 0.4 }}>Mala (0 pt)</button>
-                            <button className="grade-btn grade-btn-mid" onClick={() => handleGradeAnswer(ans.id, 5)} style={{ opacity: ans.calificacion === 5 ? 1 : 0.4 }}>Regular (5 pt)</button>
-                            <button className="grade-btn grade-btn-good" onClick={() => handleGradeAnswer(ans.id, 10)} style={{ opacity: ans.calificacion === 10 ? 1 : 0.4 }}>Buena (10 pt)</button>
+                            <button 
+                              className={`grade-btn grade-btn-bad ${ans.calificacion === 0 ? 'selected' : ''}`}
+                              onClick={() => handleGradeAnswer(ans.id, 0)}
+                            >
+                              Mala (0 pt)
+                            </button>
+                            <button 
+                              className={`grade-btn grade-btn-mid ${ans.calificacion === 5 ? 'selected' : ''}`}
+                              onClick={() => handleGradeAnswer(ans.id, 5)}
+                            >
+                              Regular (5 pt)
+                            </button>
+                            <button 
+                              className={`grade-btn grade-btn-good ${ans.calificacion === 10 ? 'selected' : ''}`}
+                              onClick={() => handleGradeAnswer(ans.id, 10)}
+                            >
+                              Buena (10 pt)
+                            </button>
                           </div>
                         </div>
                       ))}
                     </div>
-                  )}
 
-                  {answers.filter(a => a.alumno_id !== profile.id).length > 0 && (
                     <button 
                       className="btn btn-primary" 
                       onClick={handleFinishEvaluation}
-                      style={{ width: '100%', marginTop: '24px' }}
+                      style={{ width: '100%', marginTop: '32px', justifyContent: 'center' }}
                     >
-                      Finalizar Ronda & Siguiente Turno
+                      Finalizar Ronda & Actualizar Ranking
                     </button>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  {answers.some(ans => ans.alumno_id === profile.id) ? (
-                    <div style={{ backgroundColor: 'var(--success-bg)', color: 'var(--success)', padding: '16px', borderRadius: 'var(--radius-md)', fontWeight: '700', textAlign: 'center' }}>
-                      ✓ ¡Respuesta enviada con éxito! Esperando que termine el tiempo o evalúe el creador.
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <div className="user-avatar" style={{ width: '64px', height: '64px', fontSize: '28px', margin: '0 auto 16px', backgroundColor: 'var(--warning)', color: '#b45309' }}>
+                      ★
                     </div>
-                  ) : (
-                    <form onSubmit={handleSubmitAnswer}>
-                      <div className="form-group">
-                        <label className="form-label">Tu Respuesta (Texto)</label>
-                        <input 
-                          type="text" 
-                          className="form-input" 
-                          placeholder="Escribe tu respuesta aquí..."
-                          value={myAnswerText}
-                          onChange={(e) => setMyAnswerText(e.target.value)}
-                          required
-                          disabled={timeLeft === 0 || uploadingAnswerFile}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">Adjuntar Archivo de Respuesta (Opcional - Foto, PDF, etc.)</label>
-                        <input 
-                          type="file" 
-                          className="form-input"
-                          onChange={(e) => setMyAnswerFile(e.target.files[0])}
-                          disabled={timeLeft === 0 || uploadingAnswerFile}
-                        />
-                      </div>
-
-                      <button className="btn btn-primary" type="submit" style={{ width: '100%' }} disabled={timeLeft === 0 || uploadingAnswerFile}>
-                        {uploadingAnswerFile ? 'Subiendo respuesta y archivo...' : 'Enviar Respuesta'}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* EVALUATION PHASE */}
-          {session.estado === 'evaluacion' && (
-            <div className="stage-card">
-              <h2 className="stage-title">Fase de Calificación</h2>
-              <p className="stage-description">
-                La respuesta correcta esperada era: <strong style={{ color: 'var(--success)' }}>{question?.respuesta_correcta}</strong>
-              </p>
-
-              {isMyTurn ? (
-                <div>
-                  <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Califica las respuestas de tus compañeros:</h3>
-                  
-                  <div className="grading-panel">
-                    {answers.filter(ans => ans.alumno_id !== profile.id).map(ans => (
-                      <div key={ans.id} className="grading-item">
-                        <div>
-                          <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                            Respuesta de {ans.nombre}:
-                          </div>
-                          <div style={{ fontSize: '16px', fontWeight: '800', marginBottom: '6px' }}>"{ans.texto}"</div>
-
-                          {/* Render student uploaded file */}
-                          {ans.url_imagen && (
-                            <div style={{ padding: '8px 12px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', display: 'inline-block', marginTop: '6px', maxWidth: '300px' }}>
-                              {isImageFile(ans.url_imagen) ? (
-                                <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer">
-                                  <img src={ans.url_imagen} alt="Respuesta adjunta" style={{ maxWidth: '100%', maxHeight: '120px', borderRadius: '4px', display: 'block' }} />
-                                </a>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span>📎</span>
-                                  <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', fontWeight: '700', textDecoration: 'underline' }}>
-                                    Ver archivo adjunto
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="grading-buttons">
-                          <button 
-                            className="grade-btn grade-btn-bad"
-                            onClick={() => handleGradeAnswer(ans.id, 0)}
-                            style={{ opacity: ans.calificacion === 0 ? 1 : 0.4 }}
-                          >
-                            Mala (0 pt)
-                          </button>
-                          <button 
-                            className="grade-btn grade-btn-mid"
-                            onClick={() => handleGradeAnswer(ans.id, 5)}
-                            style={{ opacity: ans.calificacion === 5 ? 1 : 0.4 }}
-                          >
-                            Regular (5 pt)
-                          </button>
-                          <button 
-                            className="grade-btn grade-btn-good"
-                            onClick={() => handleGradeAnswer(ans.id, 10)}
-                            style={{ opacity: ans.calificacion === 10 ? 1 : 0.4 }}
-                          >
-                            Buena (10 pt)
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                    <h3 style={{ marginBottom: '8px', fontWeight: '800' }}>El creador está evaluando</h3>
+                    <p style={{ color: 'var(--text-muted)' }}>
+                      {currentDrawer?.nombre} está revisando las respuestas. ¡Pronto sabremos el ranking actualizado!
+                    </p>
                   </div>
-
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={handleFinishEvaluation}
-                    style={{ width: '100%', marginTop: '32px' }}
-                  >
-                    Finalizar Ronda & Actualizar Ranking
-                  </button>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <div className="user-avatar" style={{ width: '64px', height: '64px', fontSize: '28px', margin: '0 auto 16px', backgroundColor: 'var(--warning)' }}>
-                    ★
-                  </div>
-                  <h3 style={{ marginBottom: '8px' }}>El creador está evaluando</h3>
-                  <p style={{ color: 'var(--text-muted)' }}>
-                    {currentDrawer?.nombre} está revisando las respuestas. ¡Pronto sabremos el ranking actualizado!
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 

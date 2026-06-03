@@ -325,156 +325,180 @@ function AppContent() {
 
             {/* PLAYER (STUDENT) VIEW */}
             {profile?.rol === 'jugador' && (
-              <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+              <div className="student-grid">
                 
-                {/* Active Session Lobby */}
-                <div className="card" style={{ textAlign: 'center', padding: '48px 32px' }}>
-                  <GameController size={48} weight="fill" color="var(--brand)" style={{ marginBottom: '16px' }} />
-                  <h2 style={{ fontSize: '28px', marginBottom: '12px' }}>¡Hola {profile.nombre}!</h2>
-                  <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>
-                    Ingresa a la sala de juego en vivo para responder el desafío de tu curso.
-                  </p>
+                {/* Left Column: Game Lobby & Ranking */}
+                <div>
+                  {/* Active Session Lobby */}
+                  <div className="double-bezel-outer">
+                    <div className="double-bezel-inner" style={{ textAlign: 'center' }}>
+                      <GameController size={48} weight="fill" color="var(--brand)" style={{ marginBottom: '16px' }} />
+                      <h2 style={{ fontSize: '28px', marginBottom: '12px', fontFamily: 'var(--font-display)', fontWeight: '800' }}>¡Hola {profile.nombre}!</h2>
+                      <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '15px' }}>
+                        Ingresa a la sala de juego en vivo para responder el desafío de tu curso.
+                      </p>
 
-                  {demoMode ? (
-                    <div style={{ backgroundColor: 'var(--brand-light)', border: '1px solid var(--border-focus)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
-                      <h3 style={{ fontSize: '18px', color: 'var(--brand-dark)', marginBottom: '8px' }}>Partida Activa (Modo Demo)</h3>
-                      <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                        Trivia de Geografía - 7° Básico
-                      </p>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => handleJoinSession('demo-session-active', 'Trivia de Geografía')}
-                      >
-                        <Play weight="fill" /> Entrar a Jugar
-                      </button>
+                      {demoMode ? (
+                        <div style={{ backgroundColor: 'var(--brand-light)', border: '1px solid var(--border-focus)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                          <h3 style={{ fontSize: '18px', color: 'var(--brand-dark)', marginBottom: '8px', fontWeight: '800' }}>Partida Activa (Modo Demo)</h3>
+                          <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                            Trivia de Geografía - 7° Básico
+                          </p>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => handleJoinSession('demo-session-active', 'Trivia de Geografía')}
+                          >
+                            <Play weight="fill" /> Entrar a Jugar
+                          </button>
+                        </div>
+                      ) : loadingDbSession ? (
+                        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          Buscando partidas activas de tu curso...
+                        </div>
+                      ) : activeDbSession ? (
+                        <div style={{ backgroundColor: 'var(--success-bg)', border: '1px solid var(--success)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                          <h3 style={{ fontSize: '18px', color: 'var(--success)', marginBottom: '8px', fontWeight: '800' }}>🚀 Partida Activa en Vivo</h3>
+                          <p style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '16px' }}>
+                            {activeDbSession.nombre}
+                          </p>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => handleJoinSession(activeDbSession.id, activeDbSession.nombre)}
+                            style={{ backgroundColor: 'var(--success)', borderColor: 'var(--success)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
+                          >
+                            <Play weight="fill" /> Entrar a Jugar
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ backgroundColor: 'var(--warning-bg)', border: '1px dashed var(--warning)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                          <h3 style={{ fontSize: '16px', color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: '800' }}>
+                            🕒 Esperando partida activa
+                          </h3>
+                          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                            Tu profesor aún no ha iniciado la sesión de juego de hoy para tu curso. En cuanto la inicie, esta pantalla se actualizará automáticamente.
+                          </p>
+                        </div>
+                      )}
+
+                      <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '24px', textAlign: 'left' }}>
+                        <label className="form-label" style={{ textAlign: 'left' }}>O ingresa un código de sala:</label>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            placeholder="Ej: SESS-1234"
+                            value={sessionCodeInput}
+                            onChange={(e) => setSessionCodeInput(e.target.value)}
+                          />
+                          <button 
+                            className="btn btn-secondary"
+                            onClick={() => {
+                              if (sessionCodeInput) {
+                                handleJoinSession(sessionCodeInput, `Partida Especial (${sessionCodeInput})`);
+                              } else {
+                                alert("Por favor ingresa un código válido.");
+                              }
+                            }}
+                          >
+                            Unirse
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  ) : loadingDbSession ? (
-                    <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      Buscando partidas activas de tu curso...
-                    </div>
-                  ) : activeDbSession ? (
-                    <div style={{ backgroundColor: 'var(--success-bg)', border: '1px solid var(--success)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
-                      <h3 style={{ fontSize: '18px', color: 'var(--success)', marginBottom: '8px' }}>🚀 Partida Activa en Vivo</h3>
-                      <p style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '16px' }}>
-                        {activeDbSession.nombre}
-                      </p>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => handleJoinSession(activeDbSession.id, activeDbSession.nombre)}
-                        style={{ backgroundColor: 'var(--success)', borderColor: 'var(--success)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
-                      >
-                        <Play weight="fill" /> Entrar a Jugar
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ backgroundColor: 'var(--warning-bg)', border: '1px dashed var(--warning)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
-                      <h3 style={{ fontSize: '16px', color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                        🕒 Esperando partida activa
+                  </div>
+
+                  {/* Ranking Histórico del Curso */}
+                  <div className="double-bezel-outer">
+                    <div className="double-bezel-inner">
+                      <h3 className="card-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>
+                        <Trophy weight="fill" size={20} color="var(--brand)" />
+                        Ranking Histórico del Curso
                       </h3>
-                      <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                        Tu profesor aún no ha iniciado la sesión de juego de hoy para tu curso. En cuanto la inicie, esta pantalla se actualizará automáticamente.
-                      </p>
-                    </div>
-                  )}
-
-                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '24px' }}>
-                    <label className="form-label" style={{ textAlign: 'left' }}>O ingresa un código de sala:</label>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Ej: SESS-1234"
-                        value={sessionCodeInput}
-                        onChange={(e) => setSessionCodeInput(e.target.value)}
-                      />
-                      <button 
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          if (sessionCodeInput) {
-                            handleJoinSession(sessionCodeInput, `Partida Especial (${sessionCodeInput})`);
-                          } else {
-                            alert("Por favor ingresa un código válido.");
-                          }
-                        }}
-                      >
-                        Unirse
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Student Scoreboard summary */}
-                <div className="card">
-                  <h3 className="card-title">
-                    <Trophy weight="fill" size={20} color="var(--warning)" />
-                    Tu Historial de Medallas
-                  </h3>
-                  <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', margin: '16px 0' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div className="user-avatar" style={{ width: '48px', height: '48px', backgroundColor: '#fef3c7', color: '#b45309', fontSize: '20px', margin: '0 auto 8px' }}>🥇</div>
-                      <span style={{ fontSize: '12px', fontWeight: '700' }}>1er Lugar (2)</span>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div className="user-avatar" style={{ width: '48px', height: '48px', backgroundColor: '#f1f5f9', color: '#475569', fontSize: '20px', margin: '0 auto 8px' }}>🥈</div>
-                      <span style={{ fontSize: '12px', fontWeight: '700' }}>2do Lugar (1)</span>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div className="user-avatar" style={{ width: '48px', height: '48px', backgroundColor: '#ffedd5', color: '#c2410c', fontSize: '20px', margin: '0 auto 8px' }}>🥉</div>
-                      <span style={{ fontSize: '12px', fontWeight: '700' }}>3er Lugar (4)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ranking Histórico del Curso */}
-                <div className="card">
-                  <h3 className="card-title">
-                    <Trophy weight="fill" size={20} color="var(--brand)" />
-                    Ranking Histórico del Curso
-                  </h3>
-                  {loadingRankings ? (
-                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      Cargando ranking histórico...
-                    </div>
-                  ) : rankings.length === 0 ? (
-                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      Aún no hay puntuaciones registradas en este curso.
-                    </div>
-                  ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Posición</th>
-                            <th>Alumno</th>
-                            <th style={{ textAlign: 'center' }}>Partidas Jugadas</th>
-                            <th style={{ textAlign: 'right' }}>Puntos Totales</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rankings.map((student, index) => {
-                            const isMe = student.email === profile?.email;
-                            return (
-                              <tr key={student.id} style={isMe ? { backgroundColor: 'var(--brand-light)', borderLeft: '3px solid var(--brand)' } : {}}>
-                                <td style={{ fontWeight: '800' }}>#{index + 1}</td>
-                                <td>
-                                  <span style={{ fontWeight: '700' }}>{student.nombre}</span> {isMe && <span className="tag tag-success" style={{ marginLeft: '6px', fontSize: '10px' }}>Tú</span>}
-                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                    {student.historial_participacion && student.historial_participacion.length > 0 ? (
-                                      <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
-                                    ) : (
-                                      <span>Sin participación registrada</span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
-                                <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--brand)' }}>{student.puntaje_total} pts</td>
+                      {loadingRankings ? (
+                        <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          Cargando ranking histórico...
+                        </div>
+                      ) : rankings.length === 0 ? (
+                        <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          Aún no hay puntuaciones registradas en este curso.
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="data-table">
+                            <thead>
+                              <tr>
+                                <th>Posición</th>
+                                <th>Alumno</th>
+                                <th style={{ textAlign: 'center' }}>Partidas Jugadas</th>
+                                <th style={{ textAlign: 'right' }}>Puntos Totales</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {rankings.map((student, index) => {
+                                const isMe = student.email === profile?.email;
+                                return (
+                                  <tr key={student.id} style={isMe ? { backgroundColor: 'var(--brand-light)', borderLeft: '3px solid var(--brand)' } : {}}>
+                                    <td style={{ fontWeight: '800' }}>#{index + 1}</td>
+                                    <td>
+                                      <span style={{ fontWeight: '700' }}>{student.nombre}</span> {isMe && <span className="tag tag-success" style={{ marginLeft: '6px', fontSize: '10px' }}>Tú</span>}
+                                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                        {student.historial_participacion && student.historial_participacion.length > 0 ? (
+                                          <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
+                                        ) : (
+                                          <span>Sin participación registrada</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
+                                    <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--brand)' }}>{student.puntaje_total} pts</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                </div>
+
+                {/* Right Column: Scoreboard/Medals */}
+                <div>
+                  {/* Student Scoreboard summary */}
+                  <div className="double-bezel-outer">
+                    <div className="double-bezel-inner">
+                      <h3 className="card-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>
+                        <Trophy weight="fill" size={20} color="var(--warning)" />
+                        Tu Historial de Medallas
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '16px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#fffbeb' }}>
+                          <div style={{ fontSize: '28px' }}>🥇</div>
+                          <div>
+                            <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#b45309' }}>1er Lugar</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Desafíos ganados</span>
+                          </div>
+                          <span style={{ fontSize: '22px', fontWeight: '800', color: '#b45309', marginLeft: 'auto' }}>2 veces</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#f8fafc' }}>
+                          <div style={{ fontSize: '28px' }}>🥈</div>
+                          <div>
+                            <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#475569' }}>2do Lugar</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Segundos puestos</span>
+                          </div>
+                          <span style={{ fontSize: '22px', fontWeight: '800', color: '#475569', marginLeft: 'auto' }}>1 vez</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#fff7ed' }}>
+                          <div style={{ fontSize: '28px' }}>🥉</div>
+                          <div>
+                            <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#c2410c' }}>3er Lugar</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Terceros puestos</span>
+                          </div>
+                          <span style={{ fontSize: '22px', fontWeight: '800', color: '#c2410c', marginLeft: 'auto' }}>4 veces</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
               </div>
