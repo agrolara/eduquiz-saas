@@ -14,6 +14,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const [players, setPlayers] = useState([]);
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
+  const [rankings, setRankings] = useState([]);
   
   // Timer Ref & State
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes = 180s
@@ -46,6 +47,12 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         orden_turnos: ['demo-student-sofia', 'demo-student-benjamin', 'demo-student-mateo', 'demo-student-valentina']
       });
       setPlayers(demoPlayers);
+      setRankings([
+        { email: 'alumna.sofia@gmail.com', puntaje_total: 120 },
+        { email: 'alumno.benjamin@gmail.com', puntaje_total: 95 },
+        { email: 'alumno.mateo@gmail.com', puntaje_total: 80 },
+        { email: 'alumna.valentina@gmail.com', puntaje_total: 75 }
+      ]);
       return;
     }
 
@@ -138,6 +145,19 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       const { data: q } = await supabase.from('preguntas').select('*').eq('id', sess.pregunta_actual_id).single();
       setQuestion(q);
     }
+
+    // Fetch initial rankings
+    const { data: ranks } = await supabase
+      .from('rankings')
+      .select('*, perfiles_usuarios(*)')
+      .eq('curso_id', sess.curso_id);
+    if (ranks) {
+      const formatted = ranks.map(r => ({
+        email: r.perfiles_usuarios?.email,
+        puntaje_total: r.puntaje_total
+      }));
+      setRankings(formatted);
+    }
   };
 
   const subscribeToSession = () => {
@@ -156,6 +176,9 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'respuestas' }, () => {
         fetchAnswers();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => {
+        fetchRankings();
+      })
       .subscribe();
 
     return () => {
@@ -166,6 +189,24 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const fetchQuestion = async (qId) => {
     const { data } = await supabase.from('preguntas').select('*').eq('id', qId).single();
     if (data) setQuestion(data);
+  };
+
+  const fetchRankings = async () => {
+    if (demoMode) return;
+    const { data: sess } = await supabase.from('sesiones_juego').select('curso_id').eq('id', sessionId).single();
+    if (!sess) return;
+    
+    const { data: ranks } = await supabase
+      .from('rankings')
+      .select('*, perfiles_usuarios(*)')
+      .eq('curso_id', sess.curso_id);
+    if (ranks) {
+      const formatted = ranks.map(r => ({
+        email: r.perfiles_usuarios?.email,
+        puntaje_total: r.puntaje_total
+      }));
+      setRankings(formatted);
+    }
   };
 
   const fetchAnswers = async () => {
