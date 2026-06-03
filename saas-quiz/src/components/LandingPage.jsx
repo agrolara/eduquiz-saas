@@ -201,6 +201,47 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="how-it-works-section">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">¿Cómo Funciona EduQuiz?</h2>
+            <p className="section-desc">Tres simples pasos para transformar tu sala de clases en un entorno interactivo.</p>
+          </div>
+
+          <div className="how-it-works-grid">
+            <div className="double-bezel-outer">
+              <div className="double-bezel-inner step-card" style={{ padding: '32px' }}>
+                <span className="step-number">01</span>
+                <h3 className="step-title" style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: '800', marginBottom: '12px' }}>Crea el Desafío</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0, paddingRight: '24px' }}>
+                  Ingresa tus preguntas didácticas en pocos segundos o deja que nuestro motor te sugiera opciones.
+                </p>
+              </div>
+            </div>
+
+            <div className="double-bezel-outer">
+              <div className="double-bezel-inner step-card" style={{ padding: '32px' }}>
+                <span className="step-number">02</span>
+                <h3 className="step-title" style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: '800', marginBottom: '12px' }}>Comparte el Código</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0, paddingRight: '24px' }}>
+                  Los estudiantes ingresan al lobby de juego al instante usando su correo y un código rápido. Sin registros complejos.
+                </p>
+              </div>
+            </div>
+
+            <div className="double-bezel-outer">
+              <div className="double-bezel-inner step-card" style={{ padding: '32px' }}>
+                <span className="step-number">03</span>
+                <h3 className="step-title" style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: '800', marginBottom: '12px' }}>Juega y Co-evalúa</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0, paddingRight: '24px' }}>
+                  Responde en vivo. Los alumnos evalúan y califican las respuestas de sus compañeros, asignando puntos al ranking.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="features-section">
         <div className="container">
           <div className="section-header">
@@ -238,6 +279,81 @@ export default function LandingPage() {
                 <p style={{ fontSize: '14px', margin: 0 }}>Fomenta el criterio y análisis crítico: los propios alumnos evalúan y califican las respuestas de sus compañeros en vivo.</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="testimonials-section">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">Lo que dicen los profesores</h2>
+            <p className="section-desc">EduQuiz ya está transformando la concentración y motivación de los alumnos en diversas asignaturas.</p>
+          </div>
+
+          <div className="testimonials-grid">
+            {/* Testimonio Principal (Destacado Bento) */}
+            <div className="double-bezel-outer testimonial-card featured">
+              <div className="double-bezel-inner" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                <div>
+                  <div className="stars-container" style={{ display: 'flex', gap: '4px', marginBottom: '16px', color: '#f59e0b' }}>
+                    <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                  </div>
+                  <blockquote style={{ fontSize: '18px', fontWeight: '500', fontStyle: 'italic', color: 'var(--text-main)', margin: '0 0 24px', lineHeight: '1.5' }}>
+                    "Buscábamos una herramienta que permitiera a los estudiantes pensar de forma crítica sin comprometer la seguridad de sus datos escolares. El sistema de Whitelist y RLS de EduQuiz nos dio la tranquilidad técnica necesaria para implementarlo en todo el colegio."
+                  </blockquote>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="testimonial-avatar" style={{ backgroundColor: 'var(--brand)', color: '#ffffff' }}>AC</div>
+                  <div>
+                    <cite style={{ fontWeight: '800', fontStyle: 'normal', color: 'var(--text-main)', display: 'block', fontSize: '14px' }}>Andrea Castro</cite>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Directora Académica // Colegio San Agustín</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonio Secundario 1 */}
+            <div className="double-bezel-outer testimonial-card">
+              <div className="double-bezel-inner" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                <div>
+                  <div className="stars-container" style={{ display: 'flex', gap: '4px', marginBottom: '16px', color: '#f59e0b' }}>
+                    <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                  </div>
+                  <blockquote style={{ fontSize: '15px', fontStyle: 'italic', color: 'var(--text-main)', margin: '0 0 24px', lineHeight: '1.6' }}>
+                    "Mis alumnos de 7° básico ahora me piden jugar las trivias al final de cada clase de ciencias. Las dinámicas de turnos secuenciales en vivo los mantienen sumamente enfocados y motivados."
+                  </blockquote>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="testimonial-avatar" style={{ backgroundColor: 'var(--accent)', color: '#ffffff' }}>TL</div>
+                  <div>
+                    <cite style={{ fontWeight: '800', fontStyle: 'normal', color: 'var(--text-main)', display: 'block', fontSize: '13px' }}>Teresa Lara</cite>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Profesora de Ciencias // Liceo Bicentenario</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonio Secundario 2 */}
+            <div className="double-bezel-outer testimonial-card">
+              <div className="double-bezel-inner" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                <div>
+                  <div className="stars-container" style={{ display: 'flex', gap: '4px', marginBottom: '16px', color: '#f59e0b' }}>
+                    <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                  </div>
+                  <blockquote style={{ fontSize: '15px', fontStyle: 'italic', color: 'var(--text-main)', margin: '0 0 24px', lineHeight: '1.6' }}>
+                    "La evaluación por pares enseña a mi hijo a argumentar por qué la respuesta de su compañero es correcta o no. Ha sido una excelente herramienta pedagógica complementaria."
+                  </blockquote>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="testimonial-avatar" style={{ backgroundColor: '#10b981', color: '#ffffff' }}>ml</div>
+                  <div>
+                    <cite style={{ fontWeight: '800', fontStyle: 'normal', color: 'var(--text-main)', display: 'block', fontSize: '13px' }}>Mauricio Lara</cite>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Apoderado y Tutor Escolar</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
