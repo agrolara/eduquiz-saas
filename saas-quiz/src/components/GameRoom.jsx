@@ -437,6 +437,14 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       if (sErr) {
         alert("Error al actualizar partida: " + sErr.message);
       } else {
+        // CRITICAL: Set question and session state locally so UI transitions immediately
+        setQuestion(newQ[0]);
+        setSession(s => ({
+          ...s,
+          estado: 'respuesta',
+          pregunta_actual_id: newQ[0].id,
+          temporizador_fin: endTime
+        }));
         setQText('');
         setQAnswer('');
         setQFile(null);
