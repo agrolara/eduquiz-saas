@@ -26,10 +26,52 @@ export default function CourseAdminDashboard({ onStartSession }) {
   ];
 
   const demoRankings = [
-    { id: 'rank-1', nombre: 'Sofía Castro', email: 'alumna.sofia@gmail.com', puntaje_total: 120 },
-    { id: 'rank-2', nombre: 'Benjamín Díaz', email: 'alumno.benjamin@gmail.com', puntaje_total: 95 },
-    { id: 'rank-3', nombre: 'Mateo Rivas', email: 'alumno.mateo@gmail.com', puntaje_total: 80 },
-    { id: 'rank-4', nombre: 'Valentina Silva', email: 'alumna.valentina@gmail.com', puntaje_total: 75 }
+    {
+      id: 'rank-1',
+      nombre: 'Sofía Castro',
+      email: 'alumna.sofia@gmail.com',
+      puntaje_total: 120,
+      sesiones_jugadas: 3,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 50 },
+        { sesion_id: 's-demo-2', sesion_nombre: 'Desafío de Fracciones', fecha: '2026-06-02', puntaje_obtenido: 40 },
+        { sesion_id: 's-demo-3', sesion_nombre: 'Historia de Chile', fecha: '2026-06-03', puntaje_obtenido: 30 }
+      ]
+    },
+    {
+      id: 'rank-2',
+      nombre: 'Benjamín Díaz',
+      email: 'alumno.benjamin@gmail.com',
+      puntaje_total: 95,
+      sesiones_jugadas: 3,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 35 },
+        { sesion_id: 's-demo-2', sesion_nombre: 'Desafío de Fracciones', fecha: '2026-06-02', puntaje_obtenido: 30 },
+        { sesion_id: 's-demo-3', sesion_nombre: 'Historia de Chile', fecha: '2026-06-03', puntaje_obtenido: 30 }
+      ]
+    },
+    {
+      id: 'rank-3',
+      nombre: 'Mateo Rivas',
+      email: 'alumno.mateo@gmail.com',
+      puntaje_total: 80,
+      sesiones_jugadas: 2,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 40 },
+        { sesion_id: 's-demo-2', sesion_nombre: 'Desafío de Fracciones', fecha: '2026-06-02', puntaje_obtenido: 40 }
+      ]
+    },
+    {
+      id: 'rank-4',
+      nombre: 'Valentina Silva',
+      email: 'alumna.valentina@gmail.com',
+      puntaje_total: 75,
+      sesiones_jugadas: 2,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 45 },
+        { sesion_id: 's-demo-3', sesion_nombre: 'Historia de Chile', fecha: '2026-06-03', puntaje_obtenido: 30 }
+      ]
+    }
   ];
 
   const demoSessions = [
@@ -85,7 +127,9 @@ export default function CourseAdminDashboard({ onStartSession }) {
         id: r.id,
         nombre: r.perfiles_usuarios?.nombre || r.perfiles_usuarios?.email || 'Estudiante',
         email: r.perfiles_usuarios?.email,
-        puntaje_total: r.puntaje_total
+        puntaje_total: r.puntaje_total,
+        sesiones_jugadas: r.sesiones_jugadas || 0,
+        historial_participacion: r.historial_participacion || []
       }));
       setRankings(formatted);
     }
@@ -159,6 +203,98 @@ export default function CourseAdminDashboard({ onStartSession }) {
       setSessions([data[0], ...sessions]);
       setNewSessionName('');
       onStartSession(data[0].id, data[0].nombre);
+    }
+  };
+
+  const getStoragePathFromUrl = (url) => {
+    if (!url) return null;
+    const marker = '/public/quiz-assets/';
+    const index = url.indexOf(marker);
+    if (index !== -1) {
+      return url.substring(index + marker.length);
+    }
+    return null;
+  };
+
+  const handleDeleteSession = async (sessId, sessNombre) => {
+    const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar la sesión "${sessNombre}"? Esto liberará el historial visual y los archivos de imagen asociados, pero mantendrá las estadísticas y puntos históricos en el ranking.`);
+    if (!confirmDelete) return;
+
+    if (demoMode) {
+      setSessions(prev => prev.filter(s => s.id !== sessId));
+      alert("Sesión eliminada de la simulación (modo demo).");
+      return;
+    }
+
+    try {
+      // 1. Fetch questions for this session to get their image URLs
+      const { data: questions, error: qErr } = await supabase
+        .from('preguntas')
+        .select('id, url_imagen')
+        .eq('sesion_id', sessId);
+
+      if (qErr) {
+        console.error("Error fetching questions for deletion:", qErr);
+      }
+
+      // 2. Fetch answers for these questions to get their image URLs
+      let imagePathsToDelete = [];
+      if (questions && questions.length > 0) {
+        const questionIds = questions.map(q => q.id);
+        
+        // Collect question image paths
+        questions.forEach(q => {
+          if (q.url_imagen) {
+            const path = getStoragePathFromUrl(q.url_imagen);
+            if (path) imagePathsToDelete.push(path);
+          }
+        });
+
+        const { data: answers, error: aErr } = await supabase
+          .from('respuestas')
+          .select('url_imagen')
+          .in('pregunta_id', questionIds);
+
+        if (aErr) {
+          console.error("Error fetching answers for deletion:", aErr);
+        } else if (answers) {
+          answers.forEach(a => {
+            if (a.url_imagen) {
+              const path = getStoragePathFromUrl(a.url_imagen);
+              if (path) imagePathsToDelete.push(path);
+            }
+          });
+        }
+      }
+
+      // 3. Delete files from Supabase Storage
+      if (imagePathsToDelete.length > 0) {
+        const { error: storageErr } = await supabase.storage
+          .from('quiz-assets')
+          .remove(imagePathsToDelete);
+        
+        if (storageErr) {
+          console.error("Error deleting image assets from storage:", storageErr);
+        } else {
+          console.log("Deleted images from storage:", imagePathsToDelete);
+        }
+      }
+
+      // 4. Delete the game session from DB (cascades to questions and answers)
+      const { error: deleteErr } = await supabase
+        .from('sesiones_juego')
+        .delete()
+        .eq('id', sessId);
+
+      if (deleteErr) {
+        alert("Error al eliminar la sesión: " + deleteErr.message);
+      } else {
+        setSessions(prev => prev.filter(s => s.id !== sessId));
+        alert("Sesión eliminada con éxito y espacio liberado.");
+      }
+    } catch (err) {
+      console.error("Error deleting session:", err);
+      alert("Error inesperado al eliminar la sesión: " + err.message);
     }
   };
 
@@ -286,6 +422,14 @@ export default function CourseAdminDashboard({ onStartSession }) {
                         </button>
                       </>
                     )}
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ padding: '8px 10px', fontSize: '13px', borderColor: 'var(--danger)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      onClick={() => handleDeleteSession(session.id, session.nombre)}
+                      title="Eliminar sesión y liberar archivos de imagen"
+                    >
+                      <Trash size={16} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -305,6 +449,7 @@ export default function CourseAdminDashboard({ onStartSession }) {
                   <th>Rango</th>
                   <th>Alumno</th>
                   <th>Correo</th>
+                  <th style={{ textAlign: 'center' }}>Partidas Jugadas</th>
                   <th style={{ textAlign: 'right' }}>Puntos Totales</th>
                 </tr>
               </thead>
@@ -312,8 +457,18 @@ export default function CourseAdminDashboard({ onStartSession }) {
                 {rankings.map((student, index) => (
                   <tr key={student.id}>
                     <td style={{ fontWeight: '800' }}>#{index + 1}</td>
-                    <td style={{ fontWeight: '700' }}>{student.nombre}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{student.email}</td>
+                    <td>
+                      <div style={{ fontWeight: '700' }}>{student.nombre}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {student.historial_participacion && student.historial_participacion.length > 0 ? (
+                          <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
+                        ) : (
+                          <span>Sin participación registrada</span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{student.email}</td>
+                    <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
                     <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--brand)' }}>{student.puntaje_total} pts</td>
                   </tr>
                 ))}

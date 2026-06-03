@@ -61,6 +61,110 @@ function AppContent() {
     };
   }, [profile?.curso_id, demoMode]);
 
+  // Fetch historical rankings for students
+  const [rankings, setRankings] = useState([]);
+  const [loadingRankings, setLoadingRankings] = useState(false);
+
+  const demoRankings = [
+    {
+      id: 'rank-1',
+      nombre: 'Sofía Castro',
+      email: 'alumna.sofia@gmail.com',
+      puntaje_total: 120,
+      sesiones_jugadas: 3,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 50 },
+        { sesion_id: 's-demo-2', sesion_nombre: 'Desafío de Fracciones', fecha: '2026-06-02', puntaje_obtenido: 40 },
+        { sesion_id: 's-demo-3', sesion_nombre: 'Historia de Chile', fecha: '2026-06-03', puntaje_obtenido: 30 }
+      ]
+    },
+    {
+      id: 'rank-2',
+      nombre: 'Benjamín Díaz',
+      email: 'alumno.benjamin@gmail.com',
+      puntaje_total: 95,
+      sesiones_jugadas: 3,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 35 },
+        { sesion_id: 's-demo-2', sesion_nombre: 'Desafío de Fracciones', fecha: '2026-06-02', puntaje_obtenido: 30 },
+        { sesion_id: 's-demo-3', sesion_nombre: 'Historia de Chile', fecha: '2026-06-03', puntaje_obtenido: 30 }
+      ]
+    },
+    {
+      id: 'rank-3',
+      nombre: 'Mateo Rivas',
+      email: 'alumno.mateo@gmail.com',
+      puntaje_total: 80,
+      sesiones_jugadas: 2,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 40 },
+        { sesion_id: 's-demo-2', sesion_nombre: 'Desafío de Fracciones', fecha: '2026-06-02', puntaje_obtenido: 40 }
+      ]
+    },
+    {
+      id: 'rank-4',
+      nombre: 'Valentina Silva',
+      email: 'alumna.valentina@gmail.com',
+      puntaje_total: 75,
+      sesiones_jugadas: 2,
+      historial_participacion: [
+        { sesion_id: 's-demo-1', sesion_nombre: 'Trivia de Geografía', fecha: '2026-06-01', puntaje_obtenido: 45 },
+        { sesion_id: 's-demo-3', sesion_nombre: 'Historia de Chile', fecha: '2026-06-03', puntaje_obtenido: 30 }
+      ]
+    }
+  ];
+
+  useEffect(() => {
+    if (demoMode) {
+      setRankings(demoRankings);
+      return;
+    }
+
+    if (!profile?.curso_id) return;
+
+    const fetchRankings = async () => {
+      setLoadingRankings(true);
+      const { data, error } = await supabase
+        .from('rankings')
+        .select('*, perfiles_usuarios(*)')
+        .eq('curso_id', profile.curso_id)
+        .order('puntaje_total', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching rankings for player:", error);
+      } else {
+        const formatted = data.map(r => ({
+          id: r.id,
+          nombre: r.perfiles_usuarios?.nombre || r.perfiles_usuarios?.email || 'Estudiante',
+          email: r.perfiles_usuarios?.email,
+          puntaje_total: r.puntaje_total,
+          sesiones_jugadas: r.sesiones_jugadas || 0,
+          historial_participacion: r.historial_participacion || []
+        }));
+        setRankings(formatted);
+      }
+      setLoadingRankings(false);
+    };
+
+    fetchRankings();
+
+    // Subscribe to rankings update
+    const channel = supabase.channel(`course_rankings:${profile.curso_id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'rankings',
+        filter: `curso_id=eq.${profile.curso_id}`
+      }, () => {
+        fetchRankings();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.curso_id, demoMode]);
+
   if (loading) {
     return (
       <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '16px' }}>
@@ -292,6 +396,58 @@ function AppContent() {
                       <span style={{ fontSize: '12px', fontWeight: '700' }}>3er Lugar (4)</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Ranking Histórico del Curso */}
+                <div className="card">
+                  <h3 className="card-title">
+                    <Trophy weight="fill" size={20} color="var(--brand)" />
+                    Ranking Histórico del Curso
+                  </h3>
+                  {loadingRankings ? (
+                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Cargando ranking histórico...
+                    </div>
+                  ) : rankings.length === 0 ? (
+                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Aún no hay puntuaciones registradas en este curso.
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Posición</th>
+                            <th>Alumno</th>
+                            <th style={{ textAlign: 'center' }}>Partidas Jugadas</th>
+                            <th style={{ textAlign: 'right' }}>Puntos Totales</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rankings.map((student, index) => {
+                            const isMe = student.email === profile?.email;
+                            return (
+                              <tr key={student.id} style={isMe ? { backgroundColor: 'var(--brand-light)', borderLeft: '3px solid var(--brand)' } : {}}>
+                                <td style={{ fontWeight: '800' }}>#{index + 1}</td>
+                                <td>
+                                  <span style={{ fontWeight: '700' }}>{student.nombre}</span> {isMe && <span className="tag tag-success" style={{ marginLeft: '6px', fontSize: '10px' }}>Tú</span>}
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                    {student.historial_participacion && student.historial_participacion.length > 0 ? (
+                                      <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
+                                    ) : (
+                                      <span>Sin participación registrada</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
+                                <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--brand)' }}>{student.puntaje_total} pts</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
               </div>

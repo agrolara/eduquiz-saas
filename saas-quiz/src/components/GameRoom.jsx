@@ -639,16 +639,36 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         updatedAnswersList = [...updatedAnswersList, ...mockInserts];
       }
 
-      // Update mock rankings
+      // Update mock rankings (demo mode)
       for (const ans of updatedAnswersList) {
-        if (ans.calificacion > 0) {
-          setRankings(prev => prev.map(r => {
-            if (r.usuario_id === ans.alumno_id) {
-              return { ...r, puntaje_total: r.puntaje_total + ans.calificacion };
+        const finalGrade = typeof ans.calificacion === 'number' ? ans.calificacion : 0;
+        setRankings(prev => prev.map(r => {
+          if (r.usuario_id === ans.alumno_id) {
+            let historial = Array.isArray(r.historial_participacion) ? r.historial_participacion : [];
+            const existingSessionIndex = historial.findIndex(h => h.sesion_id === sessionId);
+            let newSesionesJugadas = r.sesiones_jugadas || 0;
+
+            if (existingSessionIndex !== -1) {
+              historial[existingSessionIndex].puntaje_obtenido = (historial[existingSessionIndex].puntaje_obtenido || 0) + finalGrade;
+            } else {
+              historial.push({
+                sesion_id: sessionId,
+                sesion_nombre: sessionName,
+                fecha: new Date().toISOString().split('T')[0],
+                puntaje_obtenido: finalGrade
+              });
+              newSesionesJugadas = newSesionesJugadas + 1;
             }
-            return r;
-          }));
-        }
+
+            return {
+              ...r,
+              puntaje_total: r.puntaje_total + finalGrade,
+              sesiones_jugadas: newSesionesJugadas,
+              historial_participacion: historial
+            };
+          }
+          return r;
+        }));
       }
 
       setSession(s => {
@@ -715,20 +735,72 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           .update({ calificacion: finalGrade })
           .eq('id', ans.id);
 
-        if (finalGrade > 0) {
-          const { data: rank } = await supabase
-            .from('rankings')
-            .select('*')
-            .eq('curso_id', session.curso_id)
-            .eq('usuario_id', ans.alumno_id)
-            .single();
+        // Fetch current ranking for the student to update scores & participation
+        const { data: rank } = await supabase
+          .from('rankings')
+          .select('*')
+          .eq('curso_id', session.curso_id)
+          .eq('usuario_id', ans.alumno_id)
+          .single();
 
-          if (rank) {
+        let newHistorialEntry = {
+          sesion_id: sessionId,
+          sesion_nombre: session.nombre,
+          fecha: new Date().toISOString().split('T')[0],
+          puntaje_obtenido: finalGrade
+        };
+
+        if (rank) {
+          const updatePayload = {
+            puntaje_total: rank.puntaje_total + finalGrade
+          };
+
+          let newSesionesJugadas = rank.sesiones_jugadas !== undefined ? rank.sesiones_jugadas : 0;
+          let historial = Array.isArray(rank.historial_participacion) ? rank.historial_participacion : [];
+          const existingSessionIndex = historial.findIndex(h => h.sesion_id === sessionId);
+
+          if (existingSessionIndex !== -1) {
+            historial[existingSessionIndex].puntaje_obtenido = (historial[existingSessionIndex].puntaje_obtenido || 0) + finalGrade;
+          } else {
+            historial.push(newHistorialEntry);
+            newSesionesJugadas = newSesionesJugadas + 1;
+          }
+
+          if (rank.sesiones_jugadas !== undefined) {
+            updatePayload.sesiones_jugadas = newSesionesJugadas;
+          }
+          if (rank.historial_participacion !== undefined) {
+            updatePayload.historial_participacion = historial;
+          }
+
+          const { error: upErr } = await supabase
+            .from('rankings')
+            .update(updatePayload)
+            .eq('id', rank.id);
+
+          // Fallback if columns are missing
+          if (upErr && upErr.code === '42703') {
+            console.warn("Table rankings lacks sesiones_jugadas or historial_participacion. Updating only puntaje_total.");
             await supabase
               .from('rankings')
               .update({ puntaje_total: rank.puntaje_total + finalGrade })
               .eq('id', rank.id);
-          } else {
+          }
+        } else {
+          // Attempt insert with all columns
+          const { error: insErr } = await supabase
+            .from('rankings')
+            .insert([{
+              curso_id: session.curso_id,
+              usuario_id: ans.alumno_id,
+              puntaje_total: finalGrade,
+              sesiones_jugadas: 1,
+              historial_participacion: [newHistorialEntry]
+            }]);
+
+          // Fallback if columns are missing
+          if (insErr && insErr.code === '42703') {
+            console.warn("Table rankings lacks sesiones_jugadas or historial_participacion. Inserting only basic fields.");
             await supabase
               .from('rankings')
               .insert([{
