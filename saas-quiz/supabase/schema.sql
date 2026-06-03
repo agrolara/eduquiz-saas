@@ -369,10 +369,8 @@ ON public.rankings FOR SELECT USING (true);
 
 CREATE POLICY "Allow user and admins to update rankings" 
 ON public.rankings FOR ALL USING (
-  auth.uid() = usuario_id OR
-  public.es_super_admin(auth.uid()) OR
   EXISTS (
     SELECT 1 FROM public.perfiles_usuarios p 
-    WHERE p.id = auth.uid() AND p.rol = 'admin_curso' AND p.curso_id = rankings.curso_id
+    WHERE p.id = auth.uid() AND p.curso_id = rankings.curso_id
   )
 );
