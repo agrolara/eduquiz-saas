@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { supabase } from './supabaseClient';
 import LandingPage from './components/LandingPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import CourseAdminDashboard from './components/CourseAdminDashboard';
@@ -15,6 +16,50 @@ function AppContent() {
 
   // Default Course Lobby State for Students
   const [sessionCodeInput, setSessionCodeInput] = useState('');
+  
+  // Real database session for players
+  const [activeDbSession, setActiveDbSession] = useState(null);
+  const [loadingDbSession, setLoadingDbSession] = useState(false);
+
+  useEffect(() => {
+    if (demoMode || !profile?.curso_id) return;
+
+    const fetchActiveSession = async () => {
+      setLoadingDbSession(true);
+      const { data, error } = await supabase
+        .from('sesiones_juego')
+        .select('*')
+        .eq('curso_id', profile.curso_id)
+        .neq('estado', 'finalizado')
+        .order('creado_en', { ascending: false })
+        .limit(1);
+      
+      if (!error && data && data.length > 0) {
+        setActiveDbSession(data[0]);
+      } else {
+        setActiveDbSession(null);
+      }
+      setLoadingDbSession(false);
+    };
+
+    fetchActiveSession();
+
+    // Subscribe to session changes for the course in real time
+    const channel = supabase.channel(`course_sessions:${profile.curso_id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'sesiones_juego', 
+        filter: `curso_id=eq.${profile.curso_id}` 
+      }, () => {
+        fetchActiveSession();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.curso_id, demoMode]);
 
   if (loading) {
     return (
@@ -137,18 +182,47 @@ function AppContent() {
                     Ingresa a la sala de juego en vivo para responder el desafío de tu curso.
                   </p>
 
-                  <div style={{ backgroundColor: 'var(--brand-light)', border: '1px solid var(--border-focus)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '18px', color: 'var(--brand-dark)', marginBottom: '8px' }}>Partida Activa</h3>
-                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                      Trivia de Geografía - 7° Básico
-                    </p>
-                    <button 
-                      className="btn btn-primary"
-                      onClick={() => handleJoinSession('demo-session-active', 'Trivia de Geografía')}
-                    >
-                      <Play weight="fill" /> Entrar a Jugar
-                    </button>
-                  </div>
+                  {demoMode ? (
+                    <div style={{ backgroundColor: 'var(--brand-light)', border: '1px solid var(--border-focus)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '18px', color: 'var(--brand-dark)', marginBottom: '8px' }}>Partida Activa (Modo Demo)</h3>
+                      <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                        Trivia de Geografía - 7° Básico
+                      </p>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => handleJoinSession('demo-session-active', 'Trivia de Geografía')}
+                      >
+                        <Play weight="fill" /> Entrar a Jugar
+                      </button>
+                    </div>
+                  ) : loadingDbSession ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Buscando partidas activas de tu curso...
+                    </div>
+                  ) : activeDbSession ? (
+                    <div style={{ backgroundColor: 'var(--success-bg)', border: '1px solid var(--success)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '18px', color: 'var(--success)', marginBottom: '8px' }}>🚀 Partida Activa en Vivo</h3>
+                      <p style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '16px' }}>
+                        {activeDbSession.nombre}
+                      </p>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => handleJoinSession(activeDbSession.id, activeDbSession.nombre)}
+                        style={{ backgroundColor: 'var(--success)', borderColor: 'var(--success)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
+                      >
+                        <Play weight="fill" /> Entrar a Jugar
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ backgroundColor: 'var(--warning-bg)', border: '1px dashed var(--warning)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '16px', color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        🕒 Esperando partida activa
+                      </h3>
+                      <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                        Tu profesor aún no ha iniciado la sesión de juego de hoy para tu curso. En cuanto la inicie, esta pantalla se actualizará automáticamente.
+                      </p>
+                    </div>
+                  )}
 
                   <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '24px' }}>
                     <label className="form-label" style={{ textAlign: 'left' }}>O ingresa un código de sala:</label>
