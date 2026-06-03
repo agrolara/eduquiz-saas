@@ -1189,4 +1189,74 @@ button, input, select, textarea {
   }
 }
 
+/* WhatsApp Floating Action Button style */
+.whatsapp-float {
+  position: fixed;
+  width: 60px;
+  height: 60px;
+  bottom: 40px;
+  right: 40px;
+  background-color: #25d366;
+  color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
 
+.whatsapp-float:hover {
+  transform: scale(1.1) translateY(-5px);
+  background-color: #128c7e;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.6);
+  color: #ffffff;
+}
+
+/* Feature Cards with AI-generated background assets & high contrast layout protection */
+.card-feature-gamificacion {
+  background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.94)), url('/gamificacion_bg.png');
+  background-size: cover;
+  background-position: center;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.card-feature-seguridad {
+  background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.94)), url('/seguridad_bg.png');
+  background-size: cover;
+  background-position: center;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.card-feature-evaluacion {
+  background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.94)), url('/evaluacion_bg.png');
+  background-size: cover;
+  background-position: center;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Specific contrast styles within features grid */
+.card-feature-gamificacion h3,
+.card-feature-seguridad h3,
+.card-feature-evaluacion h3 {
+  color: #ffffff !important;
+}
+
+.card-feature-gamificacion p,
+.card-feature-seguridad p,
+.card-feature-evaluacion p {
+  color: #cbd5e1 !important; /* Muted contrast slate that is highly readable on dark linear gradient */
+}
+
+.card-feature-gamificacion .feature-icon,
+.card-feature-seguridad .feature-icon,
+.card-feature-evaluacion .feature-icon {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}

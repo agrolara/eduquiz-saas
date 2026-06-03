@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Sparkle, GameController, ShieldCheck, Trophy, Play, EnvelopeSimple, Lock, User } from '@phosphor-icons/react';
+import { Sparkle, GameController, ShieldCheck, Trophy, Play, EnvelopeSimple, Lock, User, WhatsappLogo } from '@phosphor-icons/react';
 
 export default function LandingPage() {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, selectDemoUser } = useAuth();
@@ -56,21 +56,12 @@ export default function LandingPage() {
               
               <div style={{ width: '100%' }}>
                 <div className="cta-group">
-                  <button className="btn btn-primary" onClick={signInWithGoogle}>
-                    <Sparkle weight="fill" size={20} />
-                    Google OAuth
-                  </button>
-                  
-                  <button className="btn btn-secondary" onClick={() => setShowEmailForm(!showEmailForm)}>
+                  <button className="btn btn-primary" onClick={() => setShowEmailForm(!showEmailForm)}>
                     <EnvelopeSimple weight="bold" size={20} />
-                    {showEmailForm ? 'Ocultar Correo' : 'Iniciar con Correo'}
-                  </button>
-
-                  <button className="btn btn-secondary" onClick={() => selectDemoUser('super_admin')}>
-                    <GameController weight="bold" size={20} />
-                    Entrar Demo
+                    {showEmailForm ? 'Ocultar Formulario' : 'Iniciar Sesión con Correo'}
                   </button>
                 </div>
+
 
                 {/* Email Form Panel - nested double bezel */}
                 {showEmailForm && (
@@ -189,37 +180,54 @@ export default function LandingPage() {
 
           <div className="features-grid">
             <div className="double-bezel-outer">
-              <div className="double-bezel-inner" style={{ padding: '32px' }}>
+              <div className="double-bezel-inner card-feature-gamificacion" style={{ padding: '32px' }}>
                 <div className="feature-icon">
                   <GameController weight="fill" />
                 </div>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '800', marginBottom: '12px' }}>Gamificación Activa</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0 }}>Turnos secuenciales visibles, indicadores de preparación y un sistema de puntajes dinámicos que promueve la sana competencia.</p>
+                <p style={{ fontSize: '14px', margin: 0 }}>Turnos secuenciales visibles, indicadores de preparación y un sistema de puntajes dinámicos que promueve la sana competencia.</p>
               </div>
             </div>
 
             <div className="double-bezel-outer">
-              <div className="double-bezel-inner" style={{ padding: '32px' }}>
+              <div className="double-bezel-inner card-feature-seguridad" style={{ padding: '32px' }}>
                 <div className="feature-icon">
                   <ShieldCheck weight="fill" />
                 </div>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '800', marginBottom: '12px' }}>Seguridad Escolar RLS</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0 }}>Validación rigurosa de accesos contra la Whitelist de correos configurada por el apoderado o tutor. Datos totalmente protegidos.</p>
+                <p style={{ fontSize: '14px', margin: 0 }}>Validación rigurosa de accesos contra la Whitelist de correos configurada por el apoderado o tutor. Datos totalmente protegidos.</p>
               </div>
             </div>
 
             <div className="double-bezel-outer">
-              <div className="double-bezel-inner" style={{ padding: '32px' }}>
+              <div className="double-bezel-inner card-feature-evaluacion" style={{ padding: '32px' }}>
                 <div className="feature-icon">
                   <Trophy weight="fill" />
                 </div>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '800', marginBottom: '12px' }}>Evaluación por Pares</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0 }}>Fomenta el criterio y análisis crítico: los propios alumnos evalúan y califican las respuestas de sus compañeros en vivo.</p>
+                <p style={{ fontSize: '14px', margin: 0 }}>Fomenta el criterio y análisis crítico: los propios alumnos evalúan y califican las respuestas de sus compañeros en vivo.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <footer className="landing-footer" style={{ textAlign: 'center', padding: '40px 0 20px', borderTop: '1px solid var(--border-light)', marginTop: '60px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          EduQuiz © 2026 // Creado por Mauricio Lara
+        </p>
+      </footer>
+
+      {/* Floating WhatsApp Action Button */}
+      <a 
+        href="https://wa.me/56993005959" 
+        className="whatsapp-float" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        aria-label="Contacto por WhatsApp"
+      >
+        <WhatsappLogo weight="fill" size={32} />
+      </a>
     </div>
   );
 }

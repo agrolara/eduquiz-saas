@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-import { Plus, GraduationCap, Users, UserPlus, Trash } from '@phosphor-icons/react';
+import { Plus, GraduationCap, Users, UserPlus, Trash, PencilSimple, Check, X } from '@phosphor-icons/react';
 
 export default function SuperAdminDashboard() {
   const { demoMode } = useAuth();
@@ -13,6 +13,8 @@ export default function SuperAdminDashboard() {
   const [newSchoolName, setNewSchoolName] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editingEmail, setEditingEmail] = useState('');
 
   // Demo Initial Data
   const demoSchools = [
@@ -136,6 +138,46 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleUpdateAdminEmail = async (courseId, newEmail) => {
+    if (demoMode) {
+      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: newEmail || null } : c));
+      setEditingCourseId(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('cursos')
+      .update({ admin_email: newEmail || null })
+      .eq('id', courseId);
+
+    if (error) {
+      alert("Error al actualizar administrador: " + error.message);
+    } else {
+      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: newEmail || null } : c));
+      setEditingCourseId(null);
+    }
+  };
+
+  const handleDeleteAdminEmail = async (courseId) => {
+    if (!confirm("¿Seguro que deseas eliminar al administrador de este curso?")) return;
+
+    if (demoMode) {
+      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: null } : c));
+      return;
+    }
+
+    const { error } = await supabase
+      .from('cursos')
+      .update({ admin_email: null })
+      .eq('id', courseId);
+
+    if (error) {
+      alert("Error al eliminar administrador: " + error.message);
+    } else {
+      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: null } : c));
+    }
+  };
+
   return (
     <div className="super-admin-dashboard">
       <header style={{ marginBottom: '32px' }}>
@@ -254,15 +296,64 @@ export default function SuperAdminDashboard() {
                           <tr key={course.id}>
                             <td style={{ fontWeight: '700' }}>{course.nombre}</td>
                             <td>
-                              {course.admin_email ? (
+                              {editingCourseId === course.id ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span className="tag tag-success">Asignado</span>
-                                  <span style={{ fontSize: '14px', fontFamily: 'var(--font-mono)' }}>{course.admin_email}</span>
+                                  <input 
+                                    type="email" 
+                                    className="form-input" 
+                                    style={{ padding: '6px 12px', fontSize: '13px', maxWidth: '240px', margin: 0 }}
+                                    value={editingEmail}
+                                    onChange={(e) => setEditingEmail(e.target.value)}
+                                    placeholder="apoderado@gmail.com"
+                                  />
+                                  <button 
+                                    onClick={() => handleUpdateAdminEmail(course.id, editingEmail)}
+                                    style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                    title="Guardar"
+                                  >
+                                    <Check size={18} weight="bold" />
+                                  </button>
+                                  <button 
+                                    onClick={() => setEditingCourseId(null)}
+                                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                    title="Cancelar"
+                                  >
+                                    <X size={18} weight="bold" />
+                                  </button>
                                 </div>
                               ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span className="tag tag-warning">Sin Administrador</span>
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Editar para añadir Gmail</span>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {course.admin_email ? (
+                                      <>
+                                        <span className="tag tag-success">Asignado</span>
+                                        <span style={{ fontSize: '14px', fontFamily: 'var(--font-mono)' }}>{course.admin_email}</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className="tag tag-warning">Sin Administrador</span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Falta registrar Gmail</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                                    <button 
+                                      onClick={() => { setEditingCourseId(course.id); setEditingEmail(course.admin_email || ''); }}
+                                      style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                      title="Editar Administrador"
+                                    >
+                                      <PencilSimple size={16} />
+                                    </button>
+                                    {course.admin_email && (
+                                      <button 
+                                        onClick={() => handleDeleteAdminEmail(course.id)}
+                                        style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                        title="Eliminar Administrador"
+                                      >
+                                        <Trash size={16} />
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                             </td>
