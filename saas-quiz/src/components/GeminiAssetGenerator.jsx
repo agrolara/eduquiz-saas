@@ -73,6 +73,7 @@ export default function GeminiAssetGenerator({ onAssetGenerated, type = 'pregunt
           style={{ fontSize: '13px' }}
         />
         <button 
+          type="button"
           className="btn btn-primary" 
           onClick={handleGenerate}
           disabled={loading || !prompt}

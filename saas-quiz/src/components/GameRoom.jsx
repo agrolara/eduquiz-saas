@@ -269,29 +269,48 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       return;
     }
 
-    // Real Supabase insert
-    const { data: newQ, error: qErr } = await supabase
-      .from('preguntas')
-      .insert([{
-        sesion_id: sessionId,
-        creador_id: profile.id,
-        texto: qText,
-        url_imagen: qImage || null,
-        respuesta_correcta: qAnswer
-      }])
-      .select();
+    try {
+      // Real Supabase insert
+      const { data: newQ, error: qErr } = await supabase
+        .from('preguntas')
+        .insert([{
+          sesion_id: sessionId,
+          creador_id: profile.id,
+          texto: qText,
+          url_imagen: qImage || null,
+          respuesta_correcta: qAnswer
+        }])
+        .select();
 
-    if (qErr) return alert("Error al enviar pregunta: " + qErr.message);
+      if (qErr) {
+        alert("Error al enviar pregunta: " + qErr.message);
+        return;
+      }
 
-    const { error: sErr } = await supabase
-      .from('sesiones_juego')
-      .update({
-        estado: 'respuesta',
-        pregunta_actual_id: newQ[0].id
-      })
-      .eq('id', sessionId);
-    
-    if (sErr) alert("Error: " + sErr.message);
+      if (!newQ || newQ.length === 0) {
+        alert("Error: No se pudo registrar la pregunta. RLS policy error.");
+        return;
+      }
+
+      const { error: sErr } = await supabase
+        .from('sesiones_juego')
+        .update({
+          estado: 'respuesta',
+          pregunta_actual_id: newQ[0].id
+        })
+        .eq('id', sessionId);
+      
+      if (sErr) {
+        alert("Error al actualizar partida: " + sErr.message);
+      } else {
+        setQText('');
+        setQAnswer('');
+        setQImage('');
+      }
+    } catch (err) {
+      console.error("Crash submitting question:", err);
+      alert("Error inesperado al enviar la pregunta: " + err.message);
+    }
   };
 
   const handleSubmitAnswer = async (e) => {
@@ -311,20 +330,26 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       return;
     }
 
-    const { error } = await supabase
-      .from('respuestas')
-      .insert([{
-        pregunta_id: question.id,
-        alumno_id: profile.id,
-        texto: myAnswerText,
-        url_imagen: myAnswerImage || null
-      }]);
-    
-    if (error) alert("Error al responder: " + error.message);
-    else {
-      setMyAnswerText('');
-      alert("¡Respuesta enviada!");
-      fetchAnswers();
+    try {
+      const { error } = await supabase
+        .from('respuestas')
+        .insert([{
+          pregunta_id: question.id,
+          alumno_id: profile.id,
+          texto: myAnswerText,
+          url_imagen: myAnswerImage || null
+        }]);
+      
+      if (error) {
+        alert("Error al responder: " + error.message);
+      } else {
+        setMyAnswerText('');
+        alert("¡Respuesta enviada!");
+        fetchAnswers();
+      }
+    } catch (err) {
+      console.error("Crash submitting answer:", err);
+      alert("Error inesperado al enviar la respuesta: " + err.message);
     }
   };
 
@@ -353,52 +378,61 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       return;
     }
 
-    // Save grades in Supabase
-    for (const ans of answers) {
-      await supabase
-        .from('respuestas')
-        .update({ calificacion: ans.calificacion || 0 })
-        .eq('id', ans.id);
+    try {
+      // Save grades in Supabase
+      for (const ans of answers) {
+        await supabase
+          .from('respuestas')
+          .update({ calificacion: ans.calificacion || 0 })
+          .eq('id', ans.id);
 
-      // Increment student's ranking points
-      if (ans.calificacion > 0) {
-        // Check if exists
-        const { data: rank } = await supabase
-          .from('rankings')
-          .select('*')
-          .eq('curso_id', session.curso_id)
-          .eq('usuario_id', ans.alumno_id)
-          .single();
+        // Increment student's ranking points
+        if (ans.calificacion > 0) {
+          // Check if exists
+          const { data: rank } = await supabase
+            .from('rankings')
+            .select('*')
+            .eq('curso_id', session.curso_id)
+            .eq('usuario_id', ans.alumno_id)
+            .single();
 
-        if (rank) {
-          await supabase
-            .from('rankings')
-            .update({ puntaje_total: rank.puntaje_total + ans.calificacion })
-            .eq('id', rank.id);
-        } else {
-          await supabase
-            .from('rankings')
-            .insert([{
-              curso_id: session.curso_id,
-              usuario_id: ans.alumno_id,
-              puntaje_total: ans.calificacion
-            }]);
+          if (rank) {
+            await supabase
+              .from('rankings')
+              .update({ puntaje_total: rank.puntaje_total + ans.calificacion })
+              .eq('id', rank.id);
+          } else {
+            await supabase
+              .from('rankings')
+              .insert([{
+                curso_id: session.curso_id,
+                usuario_id: ans.alumno_id,
+                puntaje_total: ans.calificacion
+              }]);
+          }
         }
       }
+
+      // Rotate turns
+      const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
+      const nextIndex = (currentIndex + 1) % session.orden_turnos.length;
+
+      const { error: sErr } = await supabase
+        .from('sesiones_juego')
+        .update({
+          estado: 'pregunta',
+          turno_actual_usuario_id: session.orden_turnos[nextIndex],
+          pregunta_actual_id: null
+        })
+        .eq('id', sessionId);
+
+      if (sErr) {
+        alert("Error al rotar turnos: " + sErr.message);
+      }
+    } catch (err) {
+      console.error("Crash finishing evaluation:", err);
+      alert("Error inesperado al completar la evaluación: " + err.message);
     }
-
-    // Rotate turns
-    const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
-    const nextIndex = (currentIndex + 1) % session.orden_turnos.length;
-
-    await supabase
-      .from('sesiones_juego')
-      .update({
-        estado: 'pregunta',
-        turno_actual_usuario_id: session.orden_turnos[nextIndex],
-        pregunta_actual_id: null
-      })
-      .eq('id', sessionId);
   };
 
   // Helper selectors
