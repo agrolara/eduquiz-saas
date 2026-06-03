@@ -308,13 +308,16 @@ export default function CourseAdminDashboard({ onStartSession }) {
       }
 
       // 4. Delete the game session from DB (cascades to questions and answers)
-      const { error: deleteErr } = await supabase
+      const { data: deletedRows, error: deleteErr } = await supabase
         .from('sesiones_juego')
         .delete()
-        .eq('id', sessId);
+        .eq('id', sessId)
+        .select();
 
       if (deleteErr) {
         alert("Error al eliminar la sesión: " + deleteErr.message);
+      } else if (!deletedRows || deletedRows.length === 0) {
+        alert("No se pudo eliminar la sesión de la base de datos. Esto ocurre porque falta aplicar la política de seguridad RLS 'DELETE' en Supabase. Sigue las instrucciones e instala la consulta SQL correspondiente.");
       } else {
         setSessions(prev => prev.filter(s => s.id !== sessId));
         alert("Sesión eliminada con éxito y espacio liberado.");
