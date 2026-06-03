@@ -1314,3 +1314,68 @@ button, input, select, textarea {
   max-width: 240px;
 }
 
+/* CTA Banner Styles */
+.landing-cta-section {
+  padding: 80px 0;
+  background-color: var(--bg-page);
+}
+
+.cta-banner-outer {
+  margin-bottom: 0 !important;
+}
+
+.cta-banner-inner {
+  background-image: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(88, 28, 135, 0.85)), url('/gamificacion_bg.png');
+  background-size: cover;
+  background-position: center;
+  padding: 80px 40px !important;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.cta-title {
+  color: #ffffff !important;
+  font-size: 42px;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  font-family: var(--font-display);
+}
+
+.cta-subtitle {
+  color: #cbd5e1 !important;
+  font-size: 18px;
+  max-width: 600px;
+  margin: 0 auto 32px !important;
+}
+
+/* Pulsing effect for the big CTA button */
+@keyframes pulse-subtle {
+  0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+
+.cta-btn-whatsapp {
+  background: #25d366 !important;
+  color: #ffffff !important;
+  font-size: 18px;
+  padding: 18px 40px !important;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3) !important;
+  animation: pulse-subtle 2.5s infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cta-btn-whatsapp:hover {
+  background-color: #128c7e !important;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.5) !important;
+  color: #ffffff !important;
+}
+
+

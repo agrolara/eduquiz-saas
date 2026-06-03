@@ -242,7 +242,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="landing-footer" style={{ textAlign: 'center', padding: '40px 0 20px', borderTop: '1px solid var(--border-light)', marginTop: '60px' }}>
+      <section className="landing-cta-section">
+        <div className="container">
+          <div className="double-bezel-outer cta-banner-outer">
+            <div className="double-bezel-inner cta-banner-inner">
+              <h2 className="cta-title">¿Listo para transformar tus clases hoy mismo?</h2>
+              <p className="cta-subtitle">
+                Únete a los colegios y apoderados que ya están revolucionando el aprendizaje interactivo con gamificación activa y segura.
+              </p>
+              <a 
+                href="https://wa.me/56993005959" 
+                className="btn btn-primary cta-btn-whatsapp"
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <WhatsappLogo weight="fill" size={24} />
+                ¡¡¡Pruébalo ya!!!
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="landing-footer" style={{ textAlign: 'center', padding: '40px 0 20px', borderTop: '1px solid var(--border-light)', marginTop: '20px' }}>
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
           EduQuiz © 2026 // Creado por Mauricio Lara
         </p>
