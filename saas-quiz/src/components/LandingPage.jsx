@@ -160,7 +160,15 @@ export default function LandingPage() {
                     muted 
                     playsInline 
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.85 }}
-                  />
+                  >
+                    <track 
+                      src="/subtitles.vtt" 
+                      kind="subtitles" 
+                      srcLang="es" 
+                      label="Español" 
+                      default 
+                    />
+                  </video>
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95), transparent 70%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '24px', textAlign: 'left' }}>
                     <span className="tag tag-success" style={{ width: 'fit-content', marginBottom: '8px' }}>En Vivo</span>
                     <h3 style={{ color: 'white', fontSize: '20px', marginBottom: '4px', letterSpacing: '-0.01em', fontFamily: 'var(--font-display)' }}>EduQuiz en Acción</h3>
