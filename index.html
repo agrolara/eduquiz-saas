@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taste-Skill Interactive Hub | Antigravity</title>
+    <!-- Google Fonts for diverse styles (Minimalist, Brutalist, High-End, Monospace) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- GSAP for Elite Motion (gpt-taste demo) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- GSAP Draggable for physics interaction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+</head>
+<body class="theme-default">
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <div class="logo-symbol">▲</div>
+                    <span class="logo-text">ANTIGRAVITY</span>
+                </div>
+                <p class="sidebar-subtitle">Taste-Skill Playground</p>
+            </div>
+            
+            <nav class="skills-nav">
+                <p class="nav-section-title">Estilos de UI</p>
+                <button class="nav-item active" data-skill="minimalist-ui">
+                    <span class="nav-icon"><i class="fa-solid fa-leaf"></i></span>
+                    <span class="nav-label">Minimalist UI</span>
+                </button>
+                <button class="nav-item" data-skill="industrial-brutalist-ui">
+                    <span class="nav-icon"><i class="fa-solid fa-gears"></i></span>
+                    <span class="nav-label">Industrial Brutalist</span>
+                </button>
+                <button class="nav-item" data-skill="high-end-visual-design">
+                    <span class="nav-icon"><i class="fa-solid fa-gem"></i></span>
+                    <span class="nav-label">High-End Design</span>
+                </button>
+                <button class="nav-item" data-skill="gpt-taste">
+                    <span class="nav-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                    <span class="nav-label">GPT Taste (GSAP)</span>
+                </button>
+
+                <p class="nav-section-title">Prototipado e Imágenes</p>
+                <button class="nav-item" data-skill="brandkit">
+                    <span class="nav-icon"><i class="fa-solid fa-palette"></i></span>
+                    <span class="nav-label">Brandkit</span>
+                </button>
+                <button class="nav-item" data-skill="imagegen-frontend-mobile">
+                    <span class="nav-icon"><i class="fa-solid fa-mobile-screen-button"></i></span>
+                    <span class="nav-label">Imagegen Mobile</span>
+                </button>
+                <button class="nav-item" data-skill="imagegen-frontend-web">
+                    <span class="nav-icon"><i class="fa-solid fa-compass-drafting"></i></span>
+                    <span class="nav-label">Imagegen Web</span>
+                </button>
+
+                <p class="nav-section-title">Ingeniería y Optimización</p>
+                <button class="nav-item" data-skill="design-taste-frontend">
+                    <span class="nav-icon"><i class="fa-solid fa-code"></i></span>
+                    <span class="nav-label">Design Taste FE</span>
+                </button>
+                <button class="nav-item" data-skill="redesign-existing-projects">
+                    <span class="nav-icon"><i class="fa-solid fa-wrench"></i></span>
+                    <span class="nav-label">Redesign Projects</span>
+                </button>
+                <button class="nav-item" data-skill="image-to-code">
+                    <span class="nav-icon"><i class="fa-solid fa-file-code"></i></span>
+                    <span class="nav-label">Image to Code</span>
+                </button>
+                <button class="nav-item" data-skill="stitch-design-taste">
+                    <span class="nav-icon"><i class="fa-solid fa-sliders"></i></span>
+                    <span class="nav-label">Stitch Tokens</span>
+                </button>
+                <button class="nav-item" data-skill="full-output-enforcement">
+                    <span class="nav-icon"><i class="fa-solid fa-code-merge"></i></span>
+                    <span class="nav-label">Full Output</span>
+                </button>
+                <button class="nav-item" data-skill="android-cli">
+                    <span class="nav-icon"><i class="fa-solid fa-terminal"></i></span>
+                    <span class="nav-label">Android CLI</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <span class="version-tag">v2.1.0 Experimental</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dynamic Hub Header -->
+            <header class="hub-header">
+                <div class="header-main-info">
+                    <div class="skill-category-tag" id="skill-category">Estilos de UI</div>
+                    <h1 class="skill-title" id="skill-title">Minimalist UI</h1>
+                    <p class="skill-description" id="skill-description">Interfaces limpias de estilo editorial. Paleta monocromática cálida, tipografía refinada, bento grids planos y nula dependencia de degradados o sombras pesadas.</p>
+                </div>
+                <div class="header-metadata">
+                    <div class="meta-card">
+                        <span class="meta-label">Estilo Tipográfico</span>
+                        <span class="meta-value" id="meta-typography">Outfit / Inter</span>
+                    </div>
+                    <div class="meta-card">
+                        <span class="meta-label">Densidad Visual</span>
+                        <span class="meta-value" id="meta-density">Baja (Espacioso)</span>
+                    </div>
+                    <div class="meta-card">
+                        <span class="meta-label">Paleta de Colores</span>
+                        <span class="meta-value" id="meta-colors">Monocromo Cálido</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic Demo Playground Frame -->
+            <section class="playground-section">
+                <div class="playground-header">
+                    <div class="playground-title-bar">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="frame-label" id="frame-label">PLAYGROUND // MINIMALIST-UI</span>
+                    </div>
+                    <div class="playground-actions">
+                        <button class="action-btn" id="btn-reset-demo" title="Reiniciar demostración">
+                            <i class="fa-solid fa-rotate-left"></i> Reiniciar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- The morphing container that houses the active demo -->
+                <div class="playground-viewport" id="viewport-container">
+                    <!-- Dynamic Demo content will be injected or activated here -->
+                    <div class="demo-wrapper" id="demo-content">
+                        <!-- Default demo (Minimalist UI) will be built by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Skill Characteristics & Directives -->
+            <section class="details-section">
+                <div class="details-card border-accent">
+                    <h3><i class="fa-solid fa-circle-info"></i> Principios de Diseño del Skill</h3>
+                    <ul class="principles-list" id="principles-list">
+                        <li><strong>Monocromo cálido:</strong> Uso de fondos hueso (#F9F6F0) y textos carbón suave para alta legibilidad.</li>
+                        <li><strong>Contraste tipográfico:</strong> Títulos amplios y elegantes combinados con cuerpos de texto compactos.</li>
+                        <li><strong>Bento Grids planos:</strong> Estructura modular limpia con bordes delgados de 1px sin sombras.</li>
+                        <li><strong>Cero slop:</strong> Ausencia total de degradados neón, sombras artificiales o rellenos innecesarios.</li>
+                    </ul>
+                </div>
+                <div class="details-card border-accent">
+                    <h3><i class="fa-solid fa-code"></i> Directiva de Aplicación</h3>
+                    <pre class="code-directive" id="code-directive">
+// Estilo Minimalista Puro
+const theme = {
+  background: '#FDFBF7',
+  text: '#1C1917',
+  fontFamily: '"Outfit", sans-serif',
+  border: '1px solid rgba(28, 25, 23, 0.12)'
+};
+                    </pre>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Custom App JS -->
+    <script src="app.js"></script>
+</body>
+</html>

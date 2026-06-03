@@ -1,0 +1,1509 @@
+/* ==========================================================================
+   ANITGRAVITY TASTE-SKILL PLAYGROUND CSS DESIGN SYSTEM
+   ========================================================================== */
+
+/* 1. Global Reset & Base Variables */
+:root {
+    /* Shell Theme (Always Dark, Premium) */
+    --shell-bg: #09090b;
+    --shell-sidebar: #121215;
+    --shell-border: rgba(255, 255, 255, 0.08);
+    --shell-text: #f4f4f5;
+    --shell-text-muted: #a1a1aa;
+    --shell-accent: #6366f1;
+    --shell-accent-hover: #4f46e5;
+    --shell-font: 'Inter', sans-serif;
+
+    /* Theme Tokens (Overwritten by active theme) */
+    --bg-primary: #09090b;
+    --bg-secondary: #18181b;
+    --bg-tertiary: #27272a;
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --accent: #6366f1;
+    --border: 1px solid rgba(255, 255, 255, 0.08);
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    --radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base resets */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--shell-bg);
+    color: var(--shell-text);
+    font-family: var(--shell-font);
+    overflow-x: hidden;
+    height: 100vh;
+}
+
+/* 2. Layout Grid Shell */
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 280px;
+    background-color: var(--shell-sidebar);
+    border-right: 1px solid var(--shell-border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--shell-border);
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-symbol {
+    font-size: 20px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 900;
+}
+
+.logo-text {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #ffffff;
+}
+
+.sidebar-subtitle {
+    font-size: 11px;
+    color: var(--shell-text-muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.skills-nav {
+    padding: 20px 12px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--shell-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 16px 12px 6px 12px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--shell-text-muted);
+    cursor: pointer;
+    font-family: var(--shell-font);
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    transition: var(--transition);
+}
+
+.nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: var(--shell-text);
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.05));
+    border-left: 3px solid var(--shell-accent);
+    color: #ffffff;
+    font-weight: 600;
+    padding-left: 11px;
+}
+
+.nav-icon {
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+    color: var(--shell-text-muted);
+}
+
+.nav-item.active .nav-icon {
+    color: var(--shell-accent);
+}
+
+.sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--shell-border);
+}
+
+.version-tag {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Main Content Area */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background-color: #0b0b0e;
+    padding: 32px;
+    gap: 28px;
+}
+
+/* 3. Hub Dynamic Header */
+.hub-header {
+    background: linear-gradient(135deg, #121215 0%, #0d0d10 100%);
+    border: 1px solid var(--shell-border);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 32px;
+}
+
+.header-main-info {
+    max-width: 60%;
+}
+
+.skill-category-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--shell-accent);
+    margin-bottom: 8px;
+}
+
+.skill-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 32px;
+    color: #ffffff;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+.skill-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--shell-text-muted);
+}
+
+.header-metadata {
+    display: flex;
+    gap: 16px;
+}
+
+.meta-card {
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--shell-border);
+    padding: 14px 20px;
+    border-radius: 10px;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.meta-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--shell-text-muted);
+}
+
+.meta-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* 4. Interactive Playground Frame */
+.playground-section {
+    border: 1px solid var(--shell-border);
+    background-color: #121215;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.playground-header {
+    background-color: #16161a;
+    border-bottom: 1px solid var(--shell-border);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.playground-title-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot.red { background-color: #ef4444; }
+.dot.yellow { background-color: #eab308; }
+.dot.green { background-color: #22c55e; }
+
+.frame-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--shell-text-muted);
+    margin-left: 8px;
+    letter-spacing: 1px;
+}
+
+.action-btn {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--shell-font);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+}
+
+.action-btn:hover {
+    background-color: var(--shell-accent);
+    border-color: var(--shell-accent);
+}
+
+/* THE PLAYGROUND VIEWPORT: THIS MORPHS ENTIRELY */
+.playground-viewport {
+    min-height: 520px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    position: relative;
+    background-color: var(--bg-primary);
+    font-family: var(--font-body);
+    transition: background-color 0.5s ease, padding 0.5s ease;
+    overflow: hidden;
+}
+
+.demo-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 5. Details and Principles Area */
+.details-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.details-card {
+    background-color: #121215;
+    border: 1px solid var(--shell-border);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.details-card h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.details-card h3 i {
+    color: var(--shell-accent);
+}
+
+.principles-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.principles-list li {
+    font-size: 13.5px;
+    color: var(--shell-text-muted);
+    line-height: 1.6;
+    position: relative;
+    padding-left: 20px;
+}
+
+.principles-list li::before {
+    content: "✦";
+    position: absolute;
+    left: 0;
+    color: var(--shell-accent);
+}
+
+.code-directive {
+    background-color: #09090b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: #a7f3d0;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    max-height: 160px;
+}
+
+/* ==========================================================================
+   THEME-SPECIFIC CLASS OVERRIDES (INJECTED ON THE VIEWPORT & DEMOS)
+   ========================================================================== */
+
+/* 1. MINIMALIST UI THEME */
+.theme-minimalist {
+    --bg-primary: #F9F6F0;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #EFECE6;
+    --text-primary: #1C1917;
+    --text-secondary: #78716C;
+    --accent: #1C1917;
+    --border: 1px solid rgba(28, 25, 23, 0.12);
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --shadow: none;
+    --radius: 4px;
+}
+
+/* Minimalist Demo Styles */
+.minimalist-demo-container {
+    width: 100%;
+    max-width: 800px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+}
+
+.min-header {
+    border-bottom: 2px solid var(--text-primary);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.min-title {
+    font-family: var(--font-heading);
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+.min-date {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.min-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.min-card {
+    background-color: var(--bg-secondary);
+    border: var(--border);
+    padding: 24px;
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.min-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.min-card-title {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.min-card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.min-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.min-btn {
+    align-self: flex-start;
+    padding: 8px 16px;
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+    font-family: var(--font-heading);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+
+/* 2. INDUSTRIAL BRUTALIST UI THEME */
+.theme-brutalist {
+    --bg-primary: #000000;
+    --bg-secondary: #0a0a0a;
+    --bg-tertiary: #141414;
+    --text-primary: #00ff66; /* Neon Green */
+    --text-secondary: #88ffbb;
+    --accent: #00ff66;
+    --border: 2px solid #00ff66;
+    --font-heading: 'JetBrains Mono', monospace;
+    --font-body: 'JetBrains Mono', monospace;
+    --shadow: 4px 4px 0px #00ff66;
+    --radius: 0px; /* Absolutely square */
+}
+
+/* Brutalist Scanline overlay */
+.brutalist-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 6px 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.brutalist-demo-container {
+    width: 100%;
+    max-width: 800px;
+    z-index: 5;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+}
+
+.brut-header {
+    border: var(--border);
+    padding: 16px;
+    margin-bottom: 24px;
+    background-color: var(--bg-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brut-title {
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.brut-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.brut-card {
+    background-color: var(--bg-secondary);
+    border: var(--border);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.brut-card-header {
+    border-bottom: 1px dashed var(--text-primary);
+    padding-bottom: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.brut-value {
+    font-size: 36px;
+    font-weight: 800;
+}
+
+.brut-btn {
+    border: var(--border);
+    background-color: var(--text-primary);
+    color: #000000;
+    padding: 10px 20px;
+    font-family: var(--font-body);
+    font-weight: 800;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 3px 3px 0px #ffffff;
+    transition: transform 0.1s;
+}
+
+.brut-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+}
+
+
+/* 3. HIGH-END VISUAL DESIGN THEME */
+.theme-highend {
+    --bg-primary: #07070a;
+    --bg-secondary: rgba(20, 20, 30, 0.4);
+    --bg-tertiary: rgba(40, 40, 60, 0.6);
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --accent: #d4af37; /* Premium Gold */
+    --accent-indigo: #818cf8;
+    --border: 1px solid rgba(255, 255, 255, 0.08);
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+    --radius: 20px;
+}
+
+.highend-demo-container {
+    width: 100%;
+    max-width: 800px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+}
+
+.lux-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: 40px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle gold luxury glow on corner */
+.lux-card::before {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(0,0,0,0) 70%);
+    pointer-events: none;
+}
+
+.lux-card-glow {
+    position: absolute;
+    bottom: -100px;
+    left: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(0,0,0,0) 70%);
+    pointer-events: none;
+}
+
+.lux-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.lux-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.lux-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 300;
+    margin-top: 8px;
+    letter-spacing: -0.5px;
+}
+
+.lux-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+    margin-top: 40px;
+    border-top: var(--border);
+    padding-top: 32px;
+}
+
+.lux-detail-val {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.lux-btn {
+    background: linear-gradient(135deg, #d4af37 0%, #aa882c 100%);
+    border: none;
+    color: #000000;
+    padding: 12px 28px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 50px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    transition: var(--transition);
+}
+
+.lux-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+}
+
+
+/* 4. GPT TASTE THEME (GSAP DRAGGABLE & PHYSICS MOCKUP) */
+.theme-gpt-taste {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121e;
+    --text-primary: #ffffff;
+    --accent: #ff007f; /* Cyber Pink */
+    --border: 1px solid rgba(255, 255, 255, 0.05);
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --radius: 16px;
+}
+
+.gsap-demo-container {
+    width: 100%;
+    max-width: 800px;
+    height: 440px;
+    position: relative;
+    overflow: hidden;
+    background-color: #050508;
+    border: var(--border);
+    border-radius: var(--radius);
+}
+
+.gsap-instruction {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    z-index: 10;
+    pointer-events: none;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.gsap-card {
+    position: absolute;
+    width: 180px;
+    height: 240px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transform-origin: center;
+}
+
+.gsap-card:active {
+    cursor: grabbing;
+}
+
+.gsap-card-num {
+    font-family: 'Outfit', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.gsap-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.gsap-card-desc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.4;
+}
+
+
+/* 5. ANDROID CLI THEME & SIMULATED TERMINAL */
+.theme-android-cli {
+    --bg-primary: #1e1e1e;
+    --text-primary: #38bdf8;
+    --accent: #38bdf8;
+    --border: 1px solid #333333;
+    --font-heading: 'JetBrains Mono', monospace;
+    --font-body: 'JetBrains Mono', monospace;
+}
+
+.cli-demo-container {
+    width: 100%;
+    max-width: 800px;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 20px;
+    height: 440px;
+}
+
+.cli-terminal {
+    background-color: #0c0c0d;
+    border: 1px solid #27272a;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cli-term-header {
+    background-color: #18181b;
+    padding: 8px 16px;
+    font-size: 11px;
+    color: #71717a;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #27272a;
+}
+
+.cli-term-body {
+    flex-grow: 1;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #e4e4e7;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cli-line {
+    line-height: 1.5;
+}
+
+.cli-input-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #38bdf8;
+    margin-top: auto;
+}
+
+.cli-input {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: inherit;
+    flex-grow: 1;
+    outline: none;
+}
+
+.cli-suggestions {
+    font-size: 10px;
+    color: #71717a;
+    margin-top: 4px;
+}
+
+/* Smartphone Mockup */
+.phone-mockup {
+    background-color: #121214;
+    border: 8px solid #27272a;
+    border-radius: 36px;
+    overflow: hidden;
+    height: 100%;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.phone-screen {
+    flex-grow: 1;
+    background-color: #000000;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
+    position: relative;
+}
+
+.phone-camera {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 12px;
+    background-color: #27272a;
+    border-radius: 10px;
+    z-index: 10;
+}
+
+.phone-app-logo {
+    font-size: 32px;
+    margin-bottom: 12px;
+    color: #38bdf8;
+    animation: pulse 2s infinite;
+}
+
+.phone-app-status {
+    font-size: 11px;
+    color: #71717a;
+    font-family: sans-serif;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+
+/* 6. BRANDKIT THEME */
+.theme-brandkit {
+    --bg-primary: #fbfbfd;
+    --text-primary: #1d1d1f;
+    --accent: #111111;
+    --border: 1px solid #d2d2d7;
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+.brandkit-container {
+    width: 100%;
+    max-width: 800px;
+    background-color: #ffffff;
+    padding: 32px;
+    border-radius: 12px;
+    color: #1d1d1f;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.brand-section-header {
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e5e5e7;
+    padding-bottom: 16px;
+}
+
+.brand-title {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.brand-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+}
+
+.brand-logos {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.brand-logo-card {
+    border: 1px solid #e5e5e7;
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    font-family: var(--font-heading);
+    background-color: #f5f5f7;
+    position: relative;
+}
+
+.brand-logo-dark {
+    background-color: #1d1d1f;
+    color: #ffffff;
+}
+
+.brand-colors {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.brand-palette {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.color-swatch {
+    height: 70px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px;
+}
+
+.swatch-hex {
+    font-size: 9px;
+    font-family: monospace;
+    font-weight: bold;
+    color: rgba(255,255,255,0.8);
+}
+
+.brand-typography {
+    grid-column: span 2;
+    border-top: 1px solid #e5e5e7;
+    padding-top: 24px;
+}
+
+.typo-spec {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f7;
+}
+
+
+/* 7. DESIGN TASTE FRONTEND THEME & COMPARE SLIDER */
+.theme-design-taste {
+    --bg-primary: #0f172a;
+    --text-primary: #f8fafc;
+    --accent: #38bdf8;
+    --border: 1px solid #1e293b;
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+.slider-container {
+    width: 100%;
+    max-width: 800px;
+    height: 400px;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.slider-pane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pane-before {
+    background-color: #1e1b4b; /* Deep Indigo Vibe for standard AI */
+    z-index: 1;
+}
+
+.pane-after {
+    background-color: #020617; /* Slate Black Vibe for Anti-Slop Premium */
+    z-index: 2;
+    clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+}
+
+.pane-content {
+    width: 100%;
+    max-width: 320px;
+    padding: 32px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* AI Slop styling */
+.slop-card {
+    background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%); /* Generic Neon Gradient */
+    border: 4px solid #ffffff;
+    box-shadow: 0 20px 40px rgba(79, 70, 229, 0.4);
+    color: #ffffff;
+}
+
+.slop-title {
+    font-size: 24px;
+    font-weight: 800;
+}
+
+/* Premium Anti-Slop styling */
+.premium-card {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+}
+
+.premium-title {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.5px;
+    background: linear-gradient(to right, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.slider-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    background-color: #38bdf8;
+    z-index: 3;
+    cursor: ew-resize;
+    transform: translateX(-50%);
+}
+
+.slider-handle-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background-color: #38bdf8;
+    border: 4px solid #020617;
+    border-radius: 50%;
+    color: #020617;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.slider-label {
+    position: absolute;
+    top: 16px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 4;
+}
+
+.label-before { right: 16px; background-color: #4f46e5; color: white; }
+.label-after { left: 16px; background-color: #38bdf8; color: black; }
+
+
+/* 8. REDESIGN EXISTING PROJECTS THEME */
+.theme-redesign {
+    --bg-primary: #121214;
+    --text-primary: #ffffff;
+    --accent: #22c55e;
+}
+
+.redesign-container {
+    width: 100%;
+    max-width: 800px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    height: 420px;
+}
+
+.redesign-box {
+    background-color: #1c1c1f;
+    border: 1px solid #2e2e33;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.redesign-box-header {
+    background-color: #27272a;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.redesign-view {
+    flex-grow: 1;
+    padding: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.generic-card-old {
+    background-color: #ffffff;
+    color: #000000;
+    padding: 16px;
+    border-radius: 0px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+    width: 240px;
+}
+
+.generic-btn-old {
+    background-color: #0000ff;
+    color: #ffffff;
+    padding: 8px 16px;
+    border: none;
+    cursor: pointer;
+    margin-top: 12px;
+}
+
+.premium-card-new {
+    background: linear-gradient(145deg, #18181b, #09090b);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 24px;
+    width: 260px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+    color: #ffffff;
+}
+
+.premium-btn-new {
+    background: linear-gradient(to right, #22c55e, #10b981);
+    color: #000000;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 16px;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+
+/* 9. IMAGE TO CODE THEME */
+.theme-image-to-code {
+    --bg-primary: #0a0e17;
+    --text-primary: #ffffff;
+    --accent: #a855f7;
+}
+
+.imgcode-container {
+    width: 100%;
+    max-width: 800px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    height: 420px;
+}
+
+.imgcode-pane {
+    background-color: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.pane-label {
+    background-color: #1f2937;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #9ca3af;
+}
+
+.imgcode-draft {
+    flex-grow: 1;
+    background-color: #030712;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Artificial hand-drawn sketch look */
+.wireframe-box {
+    border: 2px dashed #4b5563;
+    border-radius: 8px;
+    padding: 24px;
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 0.6;
+}
+
+.wireframe-element {
+    background-color: #374151;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.wireframe-image {
+    height: 80px;
+    border: 2px dashed #4b5563;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+
+/* 10. IMAGEGEN FRONTEND MOBILE */
+.theme-mobilegen {
+    --bg-primary: #090d16;
+    --text-primary: #ffffff;
+}
+
+.mobilegen-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.iphone-frame {
+    width: 260px;
+    height: 480px;
+    background-color: #000000;
+    border: 8px solid #2a2d32;
+    border-radius: 40px;
+    position: relative;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.6);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.iphone-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 20px;
+    background-color: #2a2d32;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    z-index: 10;
+}
+
+.iphone-screen {
+    flex-grow: 1;
+    background-color: #0b0f19;
+    padding: 24px 16px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.mobile-card-lux {
+    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px;
+    color: #ffffff;
+}
+
+
+/* 11. IMAGEGEN FRONTEND WEB */
+.theme-webgen {
+    --bg-primary: #080710;
+    --text-primary: #ffffff;
+}
+
+.webgen-container {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.web-section-comp {
+    background-color: #12111d;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.web-section-num {
+    font-size: 11px;
+    font-family: monospace;
+    color: #818cf8;
+}
+
+
+/* 12. STITCH DESIGN TASTE & TOKENS */
+.theme-stitch {
+    --bg-primary: #0b1329;
+    --text-primary: #ffffff;
+    --accent: #3b82f6;
+}
+
+.stitch-container {
+    width: 100%;
+    max-width: 800px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    height: 420px;
+}
+
+.stitch-panel {
+    background-color: #151e3d;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.token-slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.token-slider-row label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #94a3b8;
+}
+
+.token-slider-row input[type="range"] {
+    width: 100%;
+    accent-color: #3b82f6;
+}
+
+
+/* 13. FULL-OUTPUT ENFORCEMENT */
+.theme-fulloutput {
+    --bg-primary: #0d0e12;
+    --text-primary: #ffffff;
+    --accent: #10b981;
+}
+
+.fo-container {
+    width: 100%;
+    max-width: 800px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    height: 420px;
+}
+
+.fo-panel {
+    background-color: #16181f;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.fo-code-view {
+    flex-grow: 1;
+    background-color: #090a0f;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #e4e4e7;
+    overflow-y: auto;
+}
+
+.fo-slop-text { color: #f43f5e; font-weight: bold; }
+.fo-correct-text { color: #10b981; font-weight: bold; }

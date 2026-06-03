@@ -1,0 +1,966 @@
+/* ==========================================================================
+   CRUJIENTES BAR REDESIGN PREMIUM CSS STYLE SHEET
+   ========================================================================== */
+
+/* 1. Global Reset & Theme Variables Setup */
+:root {
+    /* Style Switcher Theme-independent variables */
+    --switcher-bg: #121215;
+    --switcher-border: rgba(255, 255, 255, 0.08);
+    --switcher-text: #ffffff;
+    --transition-speed: 0.5s;
+    --transition-curve: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Default Theme: Obsidian Luxury */
+.theme-obsidian {
+    --bg-page: #050508;
+    --bg-header: rgba(10, 10, 15, 0.75);
+    --bg-card: rgba(255, 255, 255, 0.02);
+    --bg-card-hover: rgba(255, 255, 255, 0.05);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent: #d4af37; /* Luxury Liquid Gold */
+    --accent-rgb: 212, 175, 55;
+    --secondary: #a855f7; /* Mystic Purple */
+    --font-title: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --border-card: 1px solid rgba(255, 255, 255, 0.06);
+    --border-card-hover: 1px solid rgba(212, 175, 55, 0.4);
+    --shadow-card: 0 15px 35px -10px rgba(0, 0, 0, 0.6);
+    --radius: 16px;
+    --hero-blur: brightness(0.3) blur(2px);
+    --btn-radius: 50px;
+    --header-blur: blur(12px);
+}
+
+/* Minimalist Theme Override */
+.theme-minimalist {
+    --bg-page: #F9F6F0; /* Warm Cream Eggshell */
+    --bg-header: rgba(249, 246, 240, 0.92);
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #F1ECE6;
+    --text-main: #1C1917; /* Slate Charcoal */
+    --text-muted: #6b6661;
+    --accent: #1C1917; /* Solid Charcoal Accent */
+    --accent-rgb: 28, 25, 23;
+    --secondary: #78716C;
+    --font-title: 'Playfair Display', serif;
+    --font-body: 'Inter', sans-serif;
+    --border-card: 1px solid rgba(28, 25, 23, 0.12);
+    --border-card-hover: 1px solid #1C1917;
+    --shadow-card: none; /* No shadow */
+    --radius: 4px; /* Sharp editorial radius */
+    --hero-blur: grayscale(0.2) sepia(0.1) brightness(0.6);
+    --btn-radius: 0px;
+    --header-blur: none;
+}
+
+/* Industrial Brutalist Theme Override */
+.theme-brutalist {
+    --bg-page: #000000; /* Pure pitch black */
+    --bg-header: #000000;
+    --bg-card: #0a0a0a;
+    --bg-card-hover: #141414;
+    --text-main: #00ff66; /* Electric Neon Green */
+    --text-muted: #88ffbb;
+    --accent: #00ff66;
+    --accent-rgb: 0, 255, 102;
+    --secondary: #eab308; /* Warning Gold/Yellow */
+    --font-title: 'JetBrains Mono', monospace;
+    --font-body: 'JetBrains Mono', monospace;
+    --border-card: 2px solid #00ff66;
+    --border-card-hover: 2px solid #eab308;
+    --shadow-card: 6px 6px 0px #00ff66;
+    --radius: 0px; /* Absolutely square */
+    --hero-blur: contrast(1.2) brightness(0.4) saturate(0.6);
+    --btn-radius: 0px;
+    --header-blur: none;
+}
+
+/* 2. Global Defaults */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    transition: background-color var(--transition-speed) var(--transition-curve), color var(--transition-speed) var(--transition-curve);
+    overflow-x: hidden;
+}
+
+/* CRT Screen Scanline Grid (Activated in brutalist mode) */
+.brutalist-scanlines {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.theme-brutalist .brutalist-scanlines {
+    display: block;
+}
+
+/* Style Switcher Widget */
+.style-switcher {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background-color: var(--switcher-bg);
+    border: 1px solid var(--switcher-border);
+    border-radius: 50px;
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.switcher-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: bold;
+    color: #a1a1aa;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.switcher-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.switcher-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #a1a1aa;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.switcher-btn:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.switcher-btn.active {
+    background-color: #6366f1;
+    border-color: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* 3. Header & Navigation */
+.bar-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 900;
+    background-color: var(--bg-header);
+    backdrop-filter: var(--header-blur);
+    -webkit-backdrop-filter: var(--header-blur);
+    border-bottom: var(--border-card);
+    transition: background-color var(--transition-speed), border var(--transition-speed);
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text-main);
+}
+
+.logo-icon {
+    font-size: 22px;
+    background: linear-gradient(135deg, var(--accent), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 900;
+}
+
+.theme-minimalist .logo-icon {
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: unset;
+    color: var(--text-main);
+}
+
+.theme-brutalist .logo-icon {
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: unset;
+    color: var(--text-main);
+}
+
+.logo-text {
+    font-family: var(--font-title);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 1.5px;
+}
+
+.bar-nav {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.nav-link {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--accent);
+}
+
+.nav-link-btn {
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--bg-page);
+    background-color: var(--accent);
+    padding: 8px 20px;
+    border-radius: var(--btn-radius);
+    transition: all 0.3s;
+    border: 1px solid var(--accent);
+}
+
+.nav-link-btn:hover {
+    background-color: transparent;
+    color: var(--accent);
+}
+
+.mobile-menu-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 22px;
+    cursor: pointer;
+}
+
+/* 4. Hero Section */
+.bar-hero {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0 32px;
+    overflow: hidden;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('assets/gastrobar_interior.png');
+    background-size: cover;
+    background-position: center;
+    filter: var(--hero-blur);
+    transition: filter var(--transition-speed);
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hero-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.hero-title {
+    font-family: var(--font-title);
+    font-weight: 900;
+    font-size: 68px;
+    letter-spacing: -1.5px;
+    margin-bottom: 20px;
+    line-height: 1.1;
+}
+
+.hero-subtitle {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    max-width: 600px;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 16px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 28px;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: var(--btn-radius);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background-color: var(--accent);
+    color: var(--bg-page);
+    border: 1px solid var(--accent);
+}
+
+.btn-primary:hover {
+    background-color: transparent;
+    color: var(--accent);
+}
+
+.btn-secondary {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border: var(--border-card);
+}
+
+.btn-secondary:hover {
+    background-color: var(--text-main);
+    color: var(--bg-page);
+}
+
+/* Happy hour countdown Widget */
+.happy-hour-widget {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    z-index: 10;
+    background-color: var(--bg-card);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: var(--border-card);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    box-shadow: var(--shadow-card);
+    max-width: 300px;
+}
+
+.hh-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hh-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hh-status {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.hh-countdown {
+    font-family: var(--font-title);
+    font-size: 20px;
+    font-weight: 800;
+}
+
+/* 5. Experiences Grid Section */
+.bar-experiences {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 100px 32px;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.section-header.align-left {
+    text-align: left;
+    align-items: flex-start;
+}
+
+.section-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+
+.section-title {
+    font-family: var(--font-title);
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
+}
+
+.section-divider {
+    width: 60px;
+    height: 3px;
+    background-color: var(--accent);
+}
+
+.experience-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+}
+
+.exp-card {
+    background-color: var(--bg-card);
+    border: var(--border-card);
+    border-radius: var(--radius);
+    overflow: hidden; /* Clean corner clipping */
+    box-shadow: var(--shadow-card);
+    transition: all 0.4s var(--transition-curve);
+    display: flex;
+    flex-direction: column;
+}
+
+.exp-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent);
+}
+
+.exp-img-wrapper {
+    height: 180px;
+    overflow: hidden;
+    position: relative;
+    border-bottom: var(--border-card);
+}
+
+.exp-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--transition-curve);
+}
+
+.exp-card:hover .exp-card-img {
+    transform: scale(1.08);
+}
+
+.exp-card-body {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1;
+}
+
+.exp-icon {
+    font-size: 28px;
+    color: var(--accent);
+}
+
+.exp-title {
+    font-family: var(--font-title);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.exp-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+/* 6. Interactive Dining & Drinks Menu Section */
+.bar-menu-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 32px 100px 32px;
+}
+
+.menu-filters {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 48px;
+}
+
+.filter-btn {
+    background-color: var(--bg-card);
+    border: var(--border-card);
+    color: var(--text-main);
+    padding: 10px 22px;
+    border-radius: var(--btn-radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+    background-color: var(--accent);
+    color: var(--bg-page);
+    border-color: var(--accent);
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+}
+
+.menu-item-card {
+    background-color: var(--bg-card);
+    border: var(--border-card);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    gap: 20px;
+    transition: all 0.4s var(--transition-curve);
+}
+
+.menu-item-card:hover {
+    border-color: var(--accent);
+    transform: scale(1.01);
+}
+
+.menu-item-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--accent);
+    flex-shrink: 0;
+    border: var(--border-card);
+}
+
+.menu-item-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.menu-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.menu-item-title {
+    font-family: var(--font-title);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.menu-item-price {
+    font-family: var(--font-title);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.menu-item-desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 8px 0;
+}
+
+.menu-item-tags {
+    display: flex;
+    gap: 6px;
+}
+
+.menu-tag {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background-color: rgba(var(--accent-rgb), 0.1);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+/* 7. Locations & Bookings Section */
+.bar-booking-location {
+    background-color: var(--bg-card);
+    border-top: var(--border-card);
+    border-bottom: var(--border-card);
+    padding: 100px 32px;
+}
+
+.booking-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+}
+
+.location-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.location-card {
+    background-color: var(--bg-page);
+    border: var(--border-card);
+    border-radius: var(--radius);
+    padding: 32px;
+    box-shadow: var(--shadow-card);
+}
+
+.loc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.loc-title {
+    font-family: var(--font-title);
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.loc-status {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    padding: 4px 10px;
+    border-radius: 50px;
+}
+
+.loc-address {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.loc-hours {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+.whatsapp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #22c55e;
+    color: white;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: var(--btn-radius);
+    transition: all 0.3s;
+}
+
+.whatsapp-btn:hover {
+    background-color: #16a34a;
+    transform: translateY(-2px);
+}
+
+/* Reservation Booking form panel */
+.booking-panel {
+    position: relative;
+}
+
+.booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.form-group input, .form-group select {
+    background-color: var(--bg-page);
+    border: var(--border-card);
+    color: var(--text-main);
+    padding: 12px 16px;
+    font-family: inherit;
+    font-size: 13.5px;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border 0.3s;
+}
+
+.form-group input:focus, .form-group select:focus {
+    border-color: var(--accent);
+}
+
+.btn-submit-booking {
+    background-color: var(--accent);
+    color: var(--bg-page);
+    border: none;
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: var(--btn-radius);
+    transition: all 0.3s;
+}
+
+.btn-submit-booking:hover {
+    background-color: var(--text-main);
+    color: var(--bg-page);
+}
+
+/* Booking confirmation dialog overlay */
+.booking-success-message {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius);
+    z-index: 50;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding: 40px;
+    border: var(--border-card);
+}
+
+.booking-success-message i {
+    font-size: 48px;
+    color: #22c55e;
+}
+
+.booking-success-message h4 {
+    font-family: var(--font-title);
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.booking-success-message p {
+    font-size: 13.5px;
+    color: var(--text-muted);
+}
+
+.btn-close-success {
+    background-color: var(--text-main);
+    color: var(--bg-page);
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--btn-radius);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* 8. Footer */
+.bar-footer {
+    background-color: #000000;
+    border-top: var(--border-card);
+    padding: 60px 32px 30px 32px;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 40px;
+}
+
+.footer-brand {
+    max-width: 40%;
+}
+
+.footer-desc {
+    font-size: 13px;
+    color: #71717a;
+    line-height: 1.6;
+    margin-top: 12px;
+}
+
+.footer-socials {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.social-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #a1a1aa;
+}
+
+.social-links {
+    display: flex;
+    gap: 12px;
+}
+
+.social-links a {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #18181b;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.social-links a:hover {
+    background-color: var(--accent);
+    color: var(--bg-page);
+    transform: translateY(-3px);
+}
+
+.footer-bottom {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 11px;
+    color: #52525b;
+}
+
+/* 9. Responsive Adjustments */
+@media (max-width: 992px) {
+    .header-container {
+        padding: 20px 24px;
+    }
+    
+    .bar-nav {
+        display: none; /* Add responsive mobile nav logic if needed */
+    }
+
+    .mobile-menu-toggle {
+        display: block;
+    }
+
+    .hero-title {
+        font-size: 48px;
+    }
+
+    .experience-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .menu-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .booking-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .style-switcher {
+        width: 90%;
+        border-radius: 20px;
+        flex-direction: column;
+        padding: 12px;
+        gap: 8px;
+        top: 10px;
+    }
+}

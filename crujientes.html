@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crujientes Bar | Rediseño Premium</title>
+    <!-- Google Fonts for diverse styles (Minimalist, Brutalist, High-End, Monospace) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="crujientes.css">
+    <!-- GSAP for Dynamic Motion -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body class="theme-obsidian">
+    <!-- Floating Style Switcher Widget -->
+    <div class="style-switcher">
+        <span class="switcher-title"><i class="fa-solid fa-wand-magic-sparkles"></i> TASTE SKILLS SWITCHER</span>
+        <div class="switcher-buttons">
+            <button class="switcher-btn active" data-theme="obsidian" title="Obsidian Luxury Theme">
+                <i class="fa-solid fa-gem"></i> Obsidian Luxury
+            </button>
+            <button class="switcher-btn" data-theme="minimalist" title="Gastro Editorial Theme">
+                <i class="fa-solid fa-leaf"></i> Gastro Minimalist
+            </button>
+            <button class="switcher-btn" data-theme="brutalist" title="Military Terminal Theme">
+                <i class="fa-solid fa-gears"></i> Brutalist Vibe
+            </button>
+        </div>
+    </div>
+
+    <!-- Website Container -->
+    <div class="site-wrapper">
+        <!-- CRT Screen Scanline Overlay (Only active in brutalist mode) -->
+        <div class="brutalist-scanlines"></div>
+
+        <!-- Premium Header & Navigation -->
+        <header class="bar-header">
+            <div class="header-container">
+                <a href="#" class="bar-logo">
+                    <span class="logo-icon">▲</span>
+                    <span class="logo-text">CRUJIENTES</span>
+                </a>
+                <nav class="bar-nav">
+                    <a href="#inicio" class="nav-link active">Inicio</a>
+                    <a href="#experiencias" class="nav-link">Experiencias</a>
+                    <a href="#carta" class="nav-link">La Carta</a>
+                    <a href="#sucursales" class="nav-link">Sucursales</a>
+                    <a href="#reserva" class="nav-link-btn">Reservar Mesa</a>
+                </nav>
+                <button class="mobile-menu-toggle" aria-label="Abrir Menú">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section id="inicio" class="bar-hero">
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <span class="hero-tag animate-reveal">SANTIAGO, CHILE</span>
+                <h1 class="hero-title animate-reveal">Crujientes Bar</h1>
+                <p class="hero-subtitle animate-reveal">Coctelería de autor, música en vivo, tributos espectaculares y noches de karaoke con el mejor ambiente de la capital.</p>
+                <div class="hero-actions animate-reveal">
+                    <a href="#carta" class="btn-primary"><i class="fa-solid fa-utensils"></i> Explorar la Carta</a>
+                    <a href="#reserva" class="btn-secondary"><i class="fa-solid fa-calendar-check"></i> Reservar Online</a>
+                </div>
+            </div>
+
+            <!-- Dynamic Happy Hour Countdown Widget -->
+            <div class="happy-hour-widget">
+                <div class="hh-header">
+                    <i class="fa-solid fa-clock"></i> HAPPY HOUR DIRECTO
+                </div>
+                <div class="hh-body">
+                    <span class="hh-status">Lunes a Sábado: 15:00 a 20:00</span>
+                    <div class="hh-countdown" id="hh-countdown-timer">00h : 00m : 00s</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Experiences Grid Section -->
+        <section id="experiencias" class="bar-experiences">
+            <div class="section-header">
+                <span class="section-tag">QUÉ HACEMOS</span>
+                <h2 class="section-title">Noches de Energía y Buena Onda</h2>
+                <div class="section-divider"></div>
+            </div>
+            
+            <div class="experience-grid">
+                <!-- Card 1: Coctelería -->
+                <div class="exp-card animate-scroll">
+                    <div class="exp-img-wrapper">
+                        <img src="assets/luxury_cocktail.png" alt="Coctelería de Autor" class="exp-card-img">
+                    </div>
+                    <div class="exp-card-body">
+                        <div class="exp-icon"><i class="fa-solid fa-martini-glass-citrus"></i></div>
+                        <h3 class="exp-title">Coctelería de Autor</h3>
+                        <p class="exp-desc">Tragos sofisticados creados por mixólogos profesionales, combinando sabores nacionales con destilados premium mundiales.</p>
+                    </div>
+                </div>
+                <!-- Card 2: Karaoke -->
+                <div class="exp-card animate-scroll">
+                    <div class="exp-img-wrapper">
+                        <img src="assets/karaoke_night.png" alt="Karaoke Party" class="exp-card-img">
+                    </div>
+                    <div class="exp-card-body">
+                        <div class="exp-icon"><i class="fa-solid fa-microphone-lines"></i></div>
+                        <h3 class="exp-title">Karaoke Party</h3>
+                        <p class="exp-desc">Súbete al escenario y canta tus éxitos favoritos con sonido profesional e iluminación robótica de club.</p>
+                    </div>
+                </div>
+                <!-- Card 3: Shows en vivo -->
+                <div class="exp-card animate-scroll">
+                    <div class="exp-img-wrapper">
+                        <img src="assets/live_music_show.png" alt="Tributos y Shows" class="exp-card-img">
+                    </div>
+                    <div class="exp-card-body">
+                        <div class="exp-icon"><i class="fa-solid fa-guitar"></i></div>
+                        <h3 class="exp-title">Tributos y Shows</h3>
+                        <p class="exp-desc">Noches cargadas de energía con los mejores tributos musicales a bandas legendarias y comedia Stand Up en vivo.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Bar Menu Section -->
+        <section id="carta" class="bar-menu-section">
+            <div class="section-header">
+                <span class="section-tag">EL MENÚ</span>
+                <h2 class="section-title">Coctelería & Gastronomía</h2>
+                <div class="section-divider"></div>
+            </div>
+
+            <!-- Category Filter Buttons -->
+            <div class="menu-filters">
+                <button class="filter-btn active" data-category="all">Todos</button>
+                <button class="filter-btn" data-category="cocktails">Cócteles de Autor</button>
+                <button class="filter-btn" data-category="beers">Cervezas</button>
+                <button class="filter-btn" data-category="sharing">Para Compartir</button>
+                <button class="filter-btn" data-category="burgers">Burgers & Sándwiches</button>
+            </div>
+
+            <!-- Menu Grid Catalog -->
+            <div class="menu-grid" id="menu-grid-catalog">
+                <!-- Loaded dynamically by JS to support rich formatting per theme -->
+            </div>
+        </section>
+
+        <!-- Locations & Reservation Section -->
+        <section id="sucursales" class="bar-booking-location">
+            <div class="booking-grid">
+                <!-- Location Panel -->
+                <div class="location-panel">
+                    <div class="section-header align-left">
+                        <span class="section-tag">VISÍTANOS</span>
+                        <h2 class="section-title">Nuestras Sucursales</h2>
+                        <div class="section-divider"></div>
+                    </div>
+                    
+                    <div class="location-cards">
+                        <!-- Location 1 -->
+                        <div class="location-card">
+                            <div class="loc-header">
+                                <h3 class="loc-title"><i class="fa-solid fa-location-dot"></i> Providencia</h3>
+                                <span class="loc-status">Abierto</span>
+                            </div>
+                            <p class="loc-address">Av. Francisco Bilbao 1234, Providencia</p>
+                            <p class="loc-hours"><i class="fa-regular fa-clock"></i> Lun a Sáb: 15:00 a 02:00 AM</p>
+                            <div class="loc-actions">
+                                <a href="https://wa.me/56971963579" target="_blank" class="whatsapp-btn"><i class="fa-brands fa-whatsapp"></i> Contactar Providencia</a>
+                            </div>
+                        </div>
+
+                        <!-- Location 2 -->
+                        <div class="location-card">
+                            <div class="loc-header">
+                                <h3 class="loc-title"><i class="fa-solid fa-location-dot"></i> Vitacura</h3>
+                                <span class="loc-status">Abierto</span>
+                            </div>
+                            <p class="loc-address">Av. Vitacura 5678, Vitacura</p>
+                            <p class="loc-hours"><i class="fa-regular fa-clock"></i> Mié a Sáb: 17:00 a 03:00 AM</p>
+                            <div class="loc-actions">
+                                <a href="https://wa.me/56971963579" target="_blank" class="whatsapp-btn"><i class="fa-brands fa-whatsapp"></i> Contactar Vitacura</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reservation Panel -->
+                <div id="reserva" class="booking-panel">
+                    <div class="section-header align-left">
+                        <span class="section-tag">PLANEA TU NOCHE</span>
+                        <h2 class="section-title">Reserva tu Mesa</h2>
+                        <div class="section-divider"></div>
+                    </div>
+                    
+                    <form id="booking-form" class="booking-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="book-name">Nombre Completo</label>
+                                <input type="text" id="book-name" required placeholder="Ej: Juan Pérez">
+                            </div>
+                            <div class="form-group">
+                                <label for="book-phone">Teléfono de Contacto</label>
+                                <input type="tel" id="book-phone" required placeholder="Ej: +56 9 1234 5678">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="book-sucursal">Selecciona Sucursal</label>
+                                <select id="book-sucursal" required>
+                                    <option value="providencia">Providencia (Bilbao 1234)</option>
+                                    <option value="vitacura">Vitacura (Av. Vitacura 5678)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="book-guests">Cantidad de Personas</label>
+                                <input type="number" id="book-guests" min="2" max="20" value="4" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="book-date">Fecha</label>
+                                <input type="date" id="book-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="book-time">Hora de Llegada</label>
+                                <select id="book-time" required>
+                                    <option value="19:00">19:00 hrs</option>
+                                    <option value="20:00">20:00 hrs</option>
+                                    <option value="21:00">21:00 hrs</option>
+                                    <option value="22:00">22:00 hrs</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit-booking">Confirmar Reserva de Mesa</button>
+                    </form>
+                    
+                    <!-- Confirmation Dialog -->
+                    <div id="booking-success" class="booking-success-message">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <h4>¡Mesa Reservada con Éxito!</h4>
+                        <p id="success-text">Te hemos enviado un mensaje de confirmación.</p>
+                        <button type="button" class="btn-close-success" id="btn-close-success">Nueva Reserva</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bar-footer">
+            <div class="footer-container">
+                <div class="footer-brand">
+                    <div class="logo-container">
+                        <span class="logo-symbol">▲</span>
+                        <span class="logo-text">CRUJIENTES</span>
+                    </div>
+                    <p class="footer-desc">El lugar ideal para disfrutar de la mejor coctelería de autor, música en vivo y un ambiente inigualable en Santiago.</p>
+                </div>
+                <div class="footer-socials">
+                    <span class="social-title">SÍGUENOS EN REDES</span>
+                    <div class="social-links">
+                        <a href="https://www.facebook.com/crujienterestobaroficial" target="_blank" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/crujientes.chile/" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://wa.me/56971963579" target="_blank" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Crujientes Bar. Todos los derechos reservados. Rediseñado con Estilo y Elegancia por Antigravity AI.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JS Logic -->
+    <script src="crujientes.js"></script>
+</body>
+</html>
