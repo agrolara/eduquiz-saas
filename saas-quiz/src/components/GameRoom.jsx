@@ -37,6 +37,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const [myAnswerText, setMyAnswerText] = useState('');
   const [myAnswerImage, setMyAnswerImage] = useState('');
 
+  // Helper selectors
+  const isMyTurn = session?.turno_actual_usuario_id === profile?.id;
+  const currentDrawer = players.find(p => p.id === session?.turno_actual_usuario_id);
+
   // Initial Mock State for Demo Mode
   const demoPlayers = [
     { id: 'demo-student-benjamin', nombre: 'Benjamín Díaz', rol: 'jugador', email: 'alumno.benjamin@gmail.com' },
@@ -766,9 +770,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   };
 
-  // Helper selectors
-  const isMyTurn = session?.turno_actual_usuario_id === profile?.id;
-  const currentDrawer = players.find(p => p.id === session?.turno_actual_usuario_id);
+  // Helper selectors (moved to top to avoid TDZ issues)
   
   // Find who is next to ask
   const getNextDrawerName = () => {
