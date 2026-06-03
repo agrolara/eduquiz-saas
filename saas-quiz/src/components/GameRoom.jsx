@@ -7,6 +7,41 @@ import {
 
 export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const { profile, demoMode } = useAuth();
+
+  const playAlertSound = (type = 'success') => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      const playTone = (frequency, startTime, duration, vol = 0.12) => {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.value = frequency;
+        
+        gainNode.gain.setValueAtTime(vol, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+      
+      if (type === 'turn') {
+        // Two ascending notes for turn alert
+        playTone(523.25, audioCtx.currentTime, 0.12); // C5
+        playTone(659.25, audioCtx.currentTime + 0.1, 0.25); // E5
+      } else if (type === 'question') {
+        // Ding-dong note alert for loaded question
+        playTone(587.33, audioCtx.currentTime, 0.15); // D5
+        playTone(440.00, audioCtx.currentTime + 0.15, 0.35); // A4
+      }
+    } catch (err) {
+      console.warn("AudioContext not supported or blocked:", err);
+    }
+  };
   
   // Game States
   const [session, setSession] = useState(null);
@@ -90,6 +125,16 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       fetchAnswers(question.id);
     }
   }, [question?.id, demoMode]);
+
+  // Trigger sound alerts on state changes
+  useEffect(() => {
+    if (!session) return;
+    if (session.estado === 'pregunta' && session.turno_actual_usuario_id === profile?.id) {
+      playAlertSound('turn');
+    } else if (session.estado === 'respuesta' && question?.id) {
+      playAlertSound('question');
+    }
+  }, [session?.estado, session?.turno_actual_usuario_id, question?.id, profile?.id]);
 
   // Polling fallback: fetch answers every 3 seconds during respuesta phase
   useEffect(() => {

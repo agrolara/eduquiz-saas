@@ -379,12 +379,18 @@ function AppContent() {
                           </button>
                         </div>
                       ) : (
-                        <div style={{ backgroundColor: 'var(--warning-bg)', border: '1px dashed var(--warning)', padding: '24px', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
-                          <h3 style={{ fontSize: '16px', color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: '800' }}>
-                            🕒 Esperando partida activa
+                        <div className="waiting-lobby-container" style={{ padding: '24px 16px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: 'var(--bg-page)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                          <div className="radar-wave-container">
+                            <div className="radar-ping"></div>
+                            <div className="radar-wave wave-1"></div>
+                            <div className="radar-wave wave-2"></div>
+                            <div className="radar-core">📡</div>
+                          </div>
+                          <h3 style={{ fontSize: '16px', color: 'var(--brand-dark)', marginTop: '20px', marginBottom: '8px', fontWeight: '800' }}>
+                            Sincronizando con el Aula...
                           </h3>
-                          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-                            Tu profesor aún no ha iniciado la sesión de juego de hoy para tu curso. En cuanto la inicie, esta pantalla se actualizará automáticamente.
+                          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, textAlign: 'center', maxWidth: '280px', lineHeight: '1.4' }}>
+                            Esperando a que tu profesor inicie la trivia en vivo de hoy. La pantalla se actualizará automáticamente.
                           </p>
                         </div>
                       )}
@@ -478,32 +484,76 @@ function AppContent() {
                     <div className="double-bezel-inner">
                       <h3 className="card-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>
                         <Trophy weight="fill" size={20} color="var(--warning)" />
-                        Tu Historial de Medallas
+                        Vitrina de Medallas
                       </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '16px 0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#fffbeb' }}>
-                          <div style={{ fontSize: '28px' }}>🥇</div>
+                      <div className="medal-showcase">
+                        {/* Oro */}
+                        <div className="medal-slot gold-slot">
+                          <div className="medal-icon-container">
+                            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M12 15a6 6 0 100-12 6 6 0 000 12z" fill="url(#goldGrad)" stroke="#d97706" />
+                              <path d="M8.21 13.89L7 21l5-2.5 5 2.5-1.21-7.11" stroke="#b91c1c" strokeWidth="2" strokeLinejoin="round" />
+                              <text x="12" y="12.5" fill="#78350f" fontSize="8" fontWeight="800" textAnchor="middle" fontFamily="var(--font-display)">1</text>
+                              <defs>
+                                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#fbbf24" />
+                                  <stop offset="50%" stopColor="#f59e0b" />
+                                  <stop offset="100%" stopColor="#d97706" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                          </div>
                           <div>
                             <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#b45309' }}>1er Lugar</span>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Desafíos ganados</span>
                           </div>
-                          <span style={{ fontSize: '22px', fontWeight: '800', color: '#b45309', marginLeft: 'auto' }}>2 veces</span>
+                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#b45309', marginLeft: 'auto' }}>2 veces</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#f8fafc' }}>
-                          <div style={{ fontSize: '28px' }}>🥈</div>
+
+                        {/* Plata */}
+                        <div className="medal-slot silver-slot">
+                          <div className="medal-icon-container">
+                            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M12 15a6 6 0 100-12 6 6 0 000 12z" fill="url(#silverGrad)" stroke="#475569" />
+                              <path d="M8.21 13.89L7 21l5-2.5 5 2.5-1.21-7.11" stroke="#1d4ed8" strokeWidth="2" strokeLinejoin="round" />
+                              <text x="12" y="12.5" fill="#1e293b" fontSize="8" fontWeight="800" textAnchor="middle" fontFamily="var(--font-display)">2</text>
+                              <defs>
+                                <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#f1f5f9" />
+                                  <stop offset="50%" stopColor="#cbd5e1" />
+                                  <stop offset="100%" stopColor="#94a3b8" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                          </div>
                           <div>
                             <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#475569' }}>2do Lugar</span>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Segundos puestos</span>
                           </div>
-                          <span style={{ fontSize: '22px', fontWeight: '800', color: '#475569', marginLeft: 'auto' }}>1 vez</span>
+                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#475569', marginLeft: 'auto' }}>1 vez</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', backgroundColor: '#fff7ed' }}>
-                          <div style={{ fontSize: '28px' }}>🥉</div>
+
+                        {/* Bronce */}
+                        <div className="medal-slot bronze-slot">
+                          <div className="medal-icon-container">
+                            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M12 15a6 6 0 100-12 6 6 0 000 12z" fill="url(#bronzeGrad)" stroke="#92400e" />
+                              <path d="M8.21 13.89L7 21l5-2.5 5 2.5-1.21-7.11" stroke="#047857" strokeWidth="2" strokeLinejoin="round" />
+                              <text x="12" y="12.5" fill="#451a03" fontSize="8" fontWeight="800" textAnchor="middle" fontFamily="var(--font-display)">3</text>
+                              <defs>
+                                <linearGradient id="bronzeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#fed7aa" />
+                                  <stop offset="50%" stopColor="#f97316" />
+                                  <stop offset="100%" stopColor="#ea580c" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                          </div>
                           <div>
                             <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#c2410c' }}>3er Lugar</span>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Terceros puestos</span>
                           </div>
-                          <span style={{ fontSize: '22px', fontWeight: '800', color: '#c2410c', marginLeft: 'auto' }}>4 veces</span>
+                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#c2410c', marginLeft: 'auto' }}>4 veces</span>
                         </div>
                       </div>
                     </div>

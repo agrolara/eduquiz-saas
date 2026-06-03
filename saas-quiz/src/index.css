@@ -1456,5 +1456,143 @@ button, input, select, textarea {
   text-transform: uppercase;
 }
 
+/* Radar Wave Sincronization waiting lobby anim */
+.radar-wave-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.radar-core {
+  width: 48px;
+  height: 48px;
+  background-color: var(--brand);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.radar-ping {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  background-color: var(--brand);
+  border-radius: 50%;
+  animation: radar-pulse 2s infinite ease-out;
+  z-index: 2;
+}
+
+.radar-wave {
+  position: absolute;
+  border: 2px solid var(--brand);
+  border-radius: 50%;
+  opacity: 0;
+  animation: radar-wave-expand 3s infinite linear;
+}
+
+.radar-wave.wave-1 {
+  animation-delay: 0s;
+}
+
+.radar-wave.wave-2 {
+  animation-delay: 1.5s;
+}
+
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 16px rgba(99, 102, 241, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+@keyframes radar-wave-expand {
+  0% {
+    width: 48px;
+    height: 48px;
+    opacity: 0.8;
+  }
+  100% {
+    width: 140px;
+    height: 140px;
+    opacity: 0;
+  }
+}
+
+/* Trophy Cup / Showcase styling */
+.medal-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.medal-slot {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-page);
+  position: relative;
+  transition: var(--transition-normal);
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.medal-slot:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: #cbd5e1;
+}
+
+.medal-slot.gold-slot {
+  background: linear-gradient(135deg, #fffdf5 0%, #fffbeb 100%);
+  border-color: #fde68a;
+}
+.medal-slot.silver-slot {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-color: #e2e8f0;
+}
+.medal-slot.bronze-slot {
+  background: linear-gradient(135deg, #fffaf5 0%, #fff7ed 100%);
+  border-color: #fed7aa;
+}
+
+.medal-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.medal-slot:hover .medal-icon-container {
+  transform: scale(1.05) rotate(3deg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+
 
 
