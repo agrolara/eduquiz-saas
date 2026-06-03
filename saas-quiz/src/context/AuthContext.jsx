@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, [hasKeys]);
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId, retries = 3) => {
     try {
       const { data, error } = await supabase
         .from('perfiles_usuarios')
@@ -69,10 +69,15 @@ export const AuthProvider = ({ children }) => {
       
       if (error) throw error;
       setProfile(data);
+      setLoading(false);
     } catch (err) {
       console.error('Error fetching profile:', err);
-    } finally {
-      setLoading(false);
+      if (retries > 0) {
+        console.log(`Retrying profile fetch in 1.5s... (${retries} retries left)`);
+        setTimeout(() => fetchProfile(userId, retries - 1), 1500);
+      } else {
+        setLoading(false);
+      }
     }
   };
 

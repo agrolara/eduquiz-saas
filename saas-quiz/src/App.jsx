@@ -122,7 +122,15 @@ function AppContent() {
                 <span className="user-avatar">{profile?.nombre ? profile.nombre[0] : 'U'}</span>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '13px', color: '#1e293b' }}>{profile?.nombre}</div>
-                  <div className="user-role-label">{profile?.rol === 'super_admin' ? 'Super Admin' : profile?.rol === 'admin_curso' ? 'Administrador' : 'Jugador'}</div>
+                  <div className="user-role-label">
+                    {profile?.rol === 'super_admin' 
+                      ? 'Super Admin' 
+                      : profile?.rol === 'admin_curso' 
+                        ? 'Administrador' 
+                        : profile?.rol === 'jugador' 
+                          ? 'Jugador' 
+                          : 'Cargando perfil...'}
+                  </div>
                 </div>
               </div>
               <button 
@@ -160,6 +168,20 @@ function AppContent() {
         ) : (
           <div className="container" style={{ padding: '40px 0' }}>
             
+            {/* PROFILE LOADING / NOT FOUND FALLBACK */}
+            {user && !profile && (
+              <div className="card" style={{ textAlign: 'center', padding: '48px 32px', maxWidth: '500px', margin: '40px auto' }}>
+                <div className="user-avatar animate-spin" style={{ width: '48px', height: '48px', fontSize: '20px', margin: '0 auto 16px' }}>⚡</div>
+                <h3 style={{ fontSize: '20px', marginBottom: '8px' }}>Cargando perfil...</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+                  Estamos preparando tu sesión de estudiante. Si tarda más de unos segundos, intenta recargar la página.
+                </p>
+                <button className="btn btn-secondary" onClick={() => window.location.reload()} style={{ margin: '0 auto' }}>
+                  Recargar Página
+                </button>
+              </div>
+            )}
+
             {/* SUPER ADMIN VIEW */}
             {profile?.rol === 'super_admin' && (
               <SuperAdminDashboard />
@@ -282,10 +304,51 @@ function AppContent() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px', maxWidth: '600px', margin: '40px auto', backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', color: '#991b1b', fontFamily: 'sans-serif' }}>
+          <h2 style={{ fontSize: '22px', marginBottom: '12px', fontWeight: 'bold' }}>⚠️ Algo salió mal al cargar el juego</h2>
+          <p style={{ marginBottom: '16px' }}>Ha ocurrido un error inesperado. Comparte este mensaje con el administrador:</p>
+          <pre style={{ backgroundColor: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #fecaca', overflowX: 'auto', fontSize: '13px', fontFamily: 'monospace' }}>
+            {this.state.error?.toString()}
+            {"\n\nStack Trace:"}
+            {this.state.error?.stack}
+          </pre>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: '#991b1b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            Recargar Página
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
