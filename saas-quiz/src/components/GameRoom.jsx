@@ -5,6 +5,14 @@ import {
   Trophy, Clock, Star, AirplaneTilt, PlayCircle
 } from '@phosphor-icons/react';
 
+const getSessionNameAndLimit = (sess) => {
+  if (!sess) return { name: '', limit: -1 };
+  const parts = sess.nombre.split('|limit:');
+  const name = parts[0];
+  const limit = parts[1] ? parseInt(parts[1], 10) : -1;
+  return { name, limit };
+};
+
 export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const { profile, demoMode } = useAuth();
 
@@ -104,6 +112,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const [showCelebration, setShowCelebration] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
   const prevScoreRef = useRef(null);
+  
+  // Turn/Round count states
+  const [questionsCount, setQuestionsCount] = useState(0);
+  const [demoQuestionsCount, setDemoQuestionsCount] = useState(0);
 
   // File Upload States
   const [qFile, setQFile] = useState(null);
@@ -119,6 +131,18 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   useEffect(() => {
     activeQuestionIdRef.current = question?.id;
   }, [question?.id]);
+
+  // Deserialized session details & progress
+  const { name: cleanSessionName, limit: roundsLimit } = getSessionNameAndLimit(session);
+  const currentTurnNumber = demoMode ? demoQuestionsCount : questionsCount;
+
+  // Final standings / Podium players
+  const podiumPlayers = [...players]
+    .map(p => {
+      const points = rankings.find(r => r.usuario_id === p.id)?.puntaje_total || 0;
+      return { ...p, points };
+    })
+    .sort((a, b) => b.points - a.points);
 
   // Forms
   const [qText, setQText] = useState('');
@@ -227,6 +251,17 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   }, [currentScore, rankings, profile?.id]);
 
+  // Continuous confetti shower when game is finalized
+  useEffect(() => {
+    if (session?.estado === 'finalizado') {
+      triggerConfetti();
+      const interval = setInterval(() => {
+        triggerConfetti();
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.estado]);
+
   // Polling fallback: fetch answers every 3 seconds during respuesta phase
   useEffect(() => {
     if (session?.estado === 'respuesta' && question?.id && !demoMode) {
@@ -262,6 +297,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           respuesta_correcta: 'Océano Pacífico'
         });
         setSession(s => ({ ...s, estado: 'respuesta', pregunta_actual_id: 'demo-q-1' }));
+        setDemoQuestionsCount(prev => prev + 1);
         setTimeLeft(180);
       }, 4000);
       return () => clearTimeout(timeout);
@@ -367,6 +403,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     const { data: sess, error: err1 } = await supabase.from('sesiones_juego').select('*').eq('id', sessionId).single();
     if (err1) return console.error(err1);
     setSession(sess);
+    fetchQuestionsCount();
 
     // Get whitelisted / joined users (only students, excluding teacher)
     const { data: users, error: err2 } = await supabase
@@ -427,6 +464,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     const channel = supabase.channel(`game:${sessionId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sesiones_juego', filter: `id=eq.${sessionId}` }, payload => {
         setSession(payload.new);
+        fetchQuestionsCount();
+        if (payload.new.estado === 'finalizado') {
+          fetchRankings();
+        }
         if (payload.new.pregunta_actual_id) {
           fetchQuestion(payload.new.pregunta_actual_id);
         }
@@ -440,6 +481,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'preguntas' }, payload => {
         if (payload.new.sesion_id === sessionId) {
           setQuestion(payload.new);
+          fetchQuestionsCount();
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'respuestas' }, payload => {
@@ -484,6 +526,21 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   };
 
+  const fetchQuestionsCount = async () => {
+    if (demoMode) return;
+    try {
+      const { count, error } = await supabase
+        .from('preguntas')
+        .select('*', { count: 'exact', head: true })
+        .eq('sesion_id', sessionId);
+      if (!error && count !== null) {
+        setQuestionsCount(count);
+      }
+    } catch (err) {
+      console.error("Error fetching questions count:", err);
+    }
+  };
+
   const fetchAnswers = async (qId) => {
     const targetQId = qId || question?.id;
     if (!targetQId) return;
@@ -525,6 +582,61 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
   };
 
+  const handleUpdateLimit = async (newLimit) => {
+    const limitVal = parseInt(newLimit, 10);
+    if (isNaN(limitVal)) return;
+
+    if (demoMode) {
+      setSession(s => ({
+        ...s,
+        nombre: `${cleanSessionName}|limit:${limitVal}`
+      }));
+      return;
+    }
+
+    try {
+      const serializedName = `${cleanSessionName}|limit:${limitVal}`;
+      const { error } = await supabase
+        .from('sesiones_juego')
+        .update({ nombre: serializedName })
+        .eq('id', sessionId);
+      if (error) {
+        alert("Error al actualizar límite de rondas: " + error.message);
+      }
+    } catch (err) {
+      console.error("Crash updating rounds limit:", err);
+    }
+  };
+
+  const handleEndGame = async () => {
+    if (!window.confirm("¿Estás seguro de que deseas finalizar la partida ahora? Esto mostrará el podio final a todos los alumnos.")) {
+      return;
+    }
+
+    if (demoMode) {
+      setSession(s => ({
+        ...s,
+        estado: 'finalizado'
+      }));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('sesiones_juego')
+        .update({
+          estado: 'finalizado',
+          finalizado_en: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+      if (error) {
+        alert("Error al finalizar la partida: " + error.message);
+      }
+    } catch (err) {
+      console.error("Crash ending game:", err);
+    }
+  };
+
   const handleStartGame = async () => {
     const turnOrder = players.map(p => p.id);
     if (demoMode) {
@@ -561,6 +673,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       };
       setQuestion(mockQ);
       setSession(s => ({ ...s, estado: 'respuesta', pregunta_actual_id: mockQ.id }));
+      setDemoQuestionsCount(prev => prev + 1);
       setTimeLeft(180);
       setQText('');
       setQAnswer('');
@@ -807,7 +920,14 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         }));
       }
 
+      const isLimitReached = roundsLimit > 0 && demoQuestionsCount >= roundsLimit;
       setSession(s => {
+        if (isLimitReached) {
+          return {
+            ...s,
+            estado: 'finalizado'
+          };
+        }
         const currentIndex = s.orden_turnos.indexOf(s.turno_actual_usuario_id);
         const nextIndex = (currentIndex + 1) % s.orden_turnos.length;
         return {
@@ -817,7 +937,11 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           pregunta_actual_id: null
         };
       });
-      alert("Evaluación completada. Se han repartido los puntos y pasamos al siguiente turno.");
+      if (isLimitReached) {
+        alert("¡Partida finalizada! Se ha alcanzado el límite de rondas.");
+      } else {
+        alert("Evaluación completada. Se han repartido los puntos y pasamos al siguiente turno.");
+      }
       setAnswers([]);
       setQuestion(null);
       return;
@@ -953,28 +1077,40 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
     // ALWAYS rotate turns regardless of grading success
     try {
+      const isLimitReached = roundsLimit > 0 && questionsCount >= roundsLimit;
+
       const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
       const nextIndex = (currentIndex + 1) % session.orden_turnos.length;
 
+      const updatePayload = isLimitReached 
+        ? {
+            estado: 'finalizado',
+            finalizado_en: new Date().toISOString()
+          }
+        : {
+            estado: 'pregunta',
+            turno_actual_usuario_id: session.orden_turnos[nextIndex],
+            pregunta_actual_id: null,
+            temporizador_fin: null
+          };
+
       const { error: sErr } = await supabase
         .from('sesiones_juego')
-        .update({
-          estado: 'pregunta',
-          turno_actual_usuario_id: session.orden_turnos[nextIndex],
-          pregunta_actual_id: null,
-          temporizador_fin: null
-        })
+        .update(updatePayload)
         .eq('id', sessionId);
 
       if (sErr) {
-        alert("Error al rotar turnos: " + sErr.message);
+        alert("Error al actualizar partida: " + sErr.message);
       } else {
         setAnswers([]);
         setQuestion(null);
+        if (isLimitReached) {
+          alert("¡Partida finalizada! Se ha alcanzado el límite de rondas.");
+        }
       }
     } catch (err) {
-      console.error("Crash rotating turns:", err);
-      alert("Error inesperado al rotar turnos: " + err.message);
+      console.error("Crash updating turns/ending game:", err);
+      alert("Error inesperado al actualizar la partida: " + err.message);
     }
   };
 
@@ -1006,7 +1142,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           <span className="tag tag-success" style={{ marginBottom: '8px' }}>
             Partida en vivo
           </span>
-          <h1 style={{ fontSize: '28px', color: 'var(--brand-dark)' }}>{session.nombre}</h1>
+          <h1 style={{ fontSize: '28px', color: 'var(--brand-dark)' }}>{cleanSessionName}</h1>
         </div>
         <button className="btn btn-secondary" onClick={onLeave}>
           Salir de la sala
@@ -1368,7 +1504,157 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
             </div>
           )}
 
+          {/* FINALIZED PHASE */}
+          {session.estado === 'finalizado' && (
+            <div className="double-bezel-outer">
+              <div className="double-bezel-inner" style={{ textAlign: 'center', padding: '48px 24px' }}>
+                <div className="celebrate-icon-ring" style={{ width: '96px', height: '96px', fontSize: '48px' }}>
+                  🏆
+                </div>
+                <h2 className="stage-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '36px', color: 'var(--brand-dark)' }}>
+                  ¡Desafío Completado!
+                </h2>
+                <p className="stage-description" style={{ marginBottom: '40px' }}>
+                  La partida ha finalizado con éxito. Felicitaciones a todos los participantes por su excelente desempeño escolar.
+                </p>
+
+                {/* 3D Podium Visualization */}
+                <div className="podium-container">
+                  {/* 2nd Place */}
+                  {podiumPlayers[1] && (
+                    <div className="podium-step-wrapper">
+                      <div className="podium-avatar" style={{ border: '2px solid #cbd5e1' }}>
+                        {podiumPlayers[1].nombre[0]}
+                      </div>
+                      <div className="podium-name">{podiumPlayers[1].nombre}</div>
+                      <div className="podium-points">{podiumPlayers[1].points} pts</div>
+                      <div className="podium-step step-2" style={{ height: '100px' }}>
+                        <span>2°</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 1st Place */}
+                  {podiumPlayers[0] && (
+                    <div className="podium-step-wrapper">
+                      <div className="podium-avatar" style={{ border: '3px solid #fbbf24', width: '56px', height: '56px', fontSize: '24px' }}>
+                        👑
+                      </div>
+                      <div className="podium-name" style={{ fontWeight: '800' }}>{podiumPlayers[0].nombre}</div>
+                      <div className="podium-points" style={{ fontWeight: '800', color: 'var(--warning)' }}>{podiumPlayers[0].points} pts</div>
+                      <div className="podium-step step-1" style={{ height: '140px' }}>
+                        <span>1°</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3rd Place */}
+                  {podiumPlayers[2] && (
+                    <div className="podium-step-wrapper">
+                      <div className="podium-avatar" style={{ border: '2px solid #fed7aa' }}>
+                        {podiumPlayers[2].nombre[0]}
+                      </div>
+                      <div className="podium-name">{podiumPlayers[2].nombre}</div>
+                      <div className="podium-points">{podiumPlayers[2].points} pts</div>
+                      <div className="podium-step step-3" style={{ height: '70px' }}>
+                        <span>3°</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Scoreboard List */}
+                {podiumPlayers.length > 3 && (
+                  <div style={{ maxWidth: '500px', margin: '0 auto 32px', textAlign: 'left' }}>
+                    <h4 style={{ marginBottom: '16px', fontWeight: '800', textAlign: 'center' }}>Tabla de Posiciones Final</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {podiumPlayers.slice(3).map((p, idx) => (
+                        <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 20px', backgroundColor: 'var(--bg-page)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                          <span style={{ fontWeight: '700' }}>#{idx + 4} {p.nombre}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700' }}>{p.points} pts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(profile.rol === 'admin_curso' || profile.rol === 'super_admin') && (
+                  <button className="btn btn-primary" onClick={onLeave} style={{ marginTop: '24px' }}>
+                    Volver al Dashboard
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
+
+        {/* Panel de Control del Profesor */}
+        {(profile.rol === 'admin_curso' || profile.rol === 'super_admin') && session.estado !== 'finalizado' && (
+          <div className="double-bezel-outer" style={{ marginBottom: '24px' }}>
+            <div className="double-bezel-inner" style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--brand-dark)', marginBottom: '16px' }}>
+                ⚙️ Control del Profesor
+              </h3>
+              
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ fontSize: '11px', marginBottom: '6px' }}>Límite de Rondas/Turnos:</label>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', fontSize: '14px', width: '100%' }}
+                  value={roundsLimit}
+                  onChange={(e) => handleUpdateLimit(e.target.value)}
+                >
+                  <option value="-1">Sin límite (Manual)</option>
+                  <option value="5">5 turnos totales</option>
+                  <option value="10">10 turnos totales</option>
+                  <option value="15">15 turnos totales</option>
+                  <option value="20">20 turnos totales</option>
+                  {players.length > 0 && (
+                    <option value={players.length}>1 turno por alumno ({players.length} turnos)</option>
+                  )}
+                </select>
+              </div>
+
+              {/* Progress bar */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                  <span>Progreso:</span>
+                  <span>{currentTurnNumber} {roundsLimit > 0 ? `/ ${roundsLimit}` : ''} turnos</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div 
+                    style={{ 
+                      height: '100%', 
+                      width: roundsLimit > 0 ? `${Math.min(100, (currentTurnNumber / roundsLimit) * 100)}%` : '50%', 
+                      backgroundColor: 'var(--brand)', 
+                      borderRadius: '4px',
+                      transition: 'width 0.4s ease-out'
+                    }} 
+                  />
+                </div>
+              </div>
+
+              {session.estado !== 'esperando' && (
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={handleEndGame}
+                  style={{ 
+                    width: '100%', 
+                    justifyContent: 'center', 
+                    padding: '10px', 
+                    borderColor: 'var(--danger)', 
+                    color: 'var(--danger)', 
+                    fontSize: '13px',
+                    fontWeight: '800'
+                  }}
+                >
+                  Finalizar Partida Ahora
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Sidebar Leaderboard */}
         <div className="game-leaderboard">
