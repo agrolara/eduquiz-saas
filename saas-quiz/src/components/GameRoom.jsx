@@ -116,6 +116,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   // Turn/Round count states
   const [questionsCount, setQuestionsCount] = useState(0);
   const [demoQuestionsCount, setDemoQuestionsCount] = useState(0);
+  const [localLimitInput, setLocalLimitInput] = useState('');
 
   // File Upload States
   const [qFile, setQFile] = useState(null);
@@ -250,6 +251,11 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       prevScoreRef.current = currentScore;
     }
   }, [currentScore, rankings, profile?.id]);
+
+  // Sync local rounds limit input with session database value
+  useEffect(() => {
+    setLocalLimitInput(roundsLimit > 0 ? String(roundsLimit) : '');
+  }, [roundsLimit]);
 
   // Continuous confetti shower when game is finalized
   useEffect(() => {
@@ -579,6 +585,16 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       }
     } catch (err) {
       console.error('Crash in fetchAnswers:', err);
+    }
+  };
+
+  const handleApplyLimit = () => {
+    const val = localLimitInput.trim();
+    const num = val === '' ? -1 : parseInt(val, 10);
+    if (isNaN(num)) {
+      handleUpdateLimit(-1);
+    } else {
+      handleUpdateLimit(num);
     }
   };
 
@@ -1599,21 +1615,29 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label className="form-label" style={{ fontSize: '11px', marginBottom: '6px' }}>Límite de Rondas/Turnos:</label>
-                <select 
-                  className="form-input" 
-                  style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', fontSize: '14px', width: '100%' }}
-                  value={roundsLimit}
-                  onChange={(e) => handleUpdateLimit(e.target.value)}
-                >
-                  <option value="-1">Sin límite (Manual)</option>
-                  <option value="5">5 turnos totales</option>
-                  <option value="10">10 turnos totales</option>
-                  <option value="15">15 turnos totales</option>
-                  <option value="20">20 turnos totales</option>
-                  {players.length > 0 && (
-                    <option value={players.length}>1 turno por alumno ({players.length} turnos)</option>
-                  )}
-                </select>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="number" 
+                    min="1"
+                    className="form-input" 
+                    style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', fontSize: '14px', flex: 1 }}
+                    placeholder="Sin límite (libre)"
+                    value={localLimitInput}
+                    onChange={(e) => setLocalLimitInput(e.target.value)}
+                    onBlur={handleApplyLimit}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleApplyLimit(); }}
+                  />
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleApplyLimit}
+                    style={{ padding: '8px 14px', fontSize: '12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+                  >
+                    Fijar
+                  </button>
+                </div>
+                <small style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Presiona Enter o "Fijar". Dejar vacío para rondas libres.
+                </small>
               </div>
 
               {/* Progress bar */}
