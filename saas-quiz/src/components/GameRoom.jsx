@@ -110,6 +110,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   // Celebration States
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showFinalCelebration, setShowFinalCelebration] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
   const prevScoreRef = useRef(null);
   
@@ -140,10 +141,21 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   // Final standings / Podium players
   const podiumPlayers = [...players]
     .map(p => {
-      const points = rankings.find(r => r.usuario_id === p.id)?.puntaje_total || 0;
+      const rank = rankings.find(r => r.usuario_id === p.id);
+      let points = 0;
+      if (rank) {
+        if (Array.isArray(rank.historial_participacion)) {
+          const entry = rank.historial_participacion.find(h => h.sesion_id === sessionId);
+          points = entry ? (entry.puntaje_obtenido || 0) : 0;
+        } else {
+          // Fallback to cumulative points if DB column is missing (e.g. migration not run)
+          points = rank.puntaje_total || 0;
+        }
+      }
       return { ...p, points };
     })
     .sort((a, b) => b.points - a.points);
+
 
   // Forms
   const [qText, setQText] = useState('');
@@ -187,7 +199,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
     // Real Supabase Connection
     fetchSessionDetails();
-    subscribeToSession();
+    const unsubscribe = subscribeToSession();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [sessionId, demoMode]);
 
   useEffect(() => {
@@ -257,14 +272,19 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     setLocalLimitInput(roundsLimit > 0 ? String(roundsLimit) : '');
   }, [roundsLimit]);
 
-  // Continuous confetti shower when game is finalized
+  // Continuous confetti shower & final victory overlay when game is finalized
   useEffect(() => {
     if (session?.estado === 'finalizado') {
+      setShowFinalCelebration(true);
       triggerConfetti();
       const interval = setInterval(() => {
         triggerConfetti();
       }, 3000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+      };
+    } else {
+      setShowFinalCelebration(false);
     }
   }, [session?.estado]);
 
@@ -1700,24 +1720,18 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           </h3>
           
           <div className="leaderboard-list">
-            {[...players]
-              .map(p => {
-                const points = rankings.find(r => r.usuario_id === p.id)?.puntaje_total || 0;
-                return { ...p, points };
-              })
-              .sort((a, b) => b.points - a.points)
-              .map((p, idx) => {
-                const podiumClass = idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : '';
-                return (
-                  <div key={p.id} className={`leaderboard-item ${podiumClass}`}>
-                    <div className="leaderboard-user">
-                      <span className="leaderboard-rank">#{idx + 1}</span>
-                      <span style={{ fontWeight: '700', fontSize: '14px' }}>{p.nombre}</span>
-                    </div>
-                    <span className="leaderboard-points">{p.points} pts</span>
+            {podiumPlayers.map((p, idx) => {
+              const podiumClass = idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : '';
+              return (
+                <div key={p.id} className={`leaderboard-item ${podiumClass}`}>
+                  <div className="leaderboard-user">
+                    <span className="leaderboard-rank">#{idx + 1}</span>
+                    <span style={{ fontWeight: '700', fontSize: '14px' }}>{p.nombre}</span>
                   </div>
-                );
-              })}
+                  <span className="leaderboard-points">{p.points} pts</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1742,6 +1756,82 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               <div className="celebrate-score-badge">
                 <span>+{pointsEarned} PUNTOS</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Session Winner Celebration Overlay */}
+      {showFinalCelebration && podiumPlayers.length > 0 && (
+        <div className="celebration-overlay" onClick={() => setShowFinalCelebration(false)}>
+          <div className="celebration-card-outer double-bezel-outer" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="celebration-card-inner double-bezel-inner" style={{ padding: '40px 32px' }}>
+              <div className="celebrate-icon-ring" style={{ width: '90px', height: '90px', fontSize: '44px', background: 'linear-gradient(135deg, #fbbf24, #d97706)' }}>
+                👑
+              </div>
+              <h2 className="celebrate-title" style={{ fontSize: '32px' }}>¡Tenemos un Ganador!</h2>
+              <p className="celebrate-subtitle" style={{ marginBottom: '20px' }}>
+                El desafío ha terminado. Felicitaciones a quien lideró la sala hoy:
+              </p>
+
+              {/* Winner Showcase Box */}
+              <div style={{ 
+                backgroundColor: 'var(--warning-bg)', 
+                border: '2px solid #fde68a', 
+                borderRadius: 'var(--radius-md)', 
+                padding: '20px', 
+                marginBottom: '28px',
+                transform: 'scale(1.02)'
+              }}>
+                <h3 style={{ fontSize: '24px', color: '#b45309', fontWeight: '800', marginBottom: '4px' }}>
+                  {podiumPlayers[0].nombre}
+                </h3>
+                <span style={{ fontSize: '14px', color: '#b45309', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>
+                  {podiumPlayers[0].points} puntos totales 🏆
+                </span>
+              </div>
+
+              {/* Standing positions summary list */}
+              <div style={{ textAlign: 'left', marginBottom: '32px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px' }}>
+                  Tabla de Clasificación de la Sesión
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {podiumPlayers.map((p, idx) => {
+                    const isWinner = idx === 0;
+                    return (
+                      <div 
+                        key={p.id} 
+                        style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center', 
+                          padding: '10px 16px', 
+                          backgroundColor: isWinner ? 'var(--warning-bg)' : 'var(--bg-page)', 
+                          borderRadius: 'var(--radius-sm)', 
+                          border: `1px solid ${isWinner ? '#fde68a' : 'var(--border-light)'}`,
+                          fontWeight: isWinner ? '800' : '600'
+                        }}
+                      >
+                        <span style={{ fontSize: '14px' }}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`} {p.nombre}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--brand-dark)' }}>
+                          {p.points} pts
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowFinalCelebration(false)} 
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Ver Podio 3D
+              </button>
             </div>
           </div>
         </div>
