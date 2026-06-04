@@ -885,6 +885,18 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   };
 
   const handleFinishEvaluation = async () => {
+    // Prevent finishing round if there are ungraded student answers
+    const ungradedAnswers = answers.filter(ans => 
+      ans.alumno_id !== session.turno_actual_usuario_id && 
+      (ans.calificacion === null || ans.calificacion === undefined)
+    );
+
+    if (ungradedAnswers.length > 0) {
+      const names = ungradedAnswers.map(a => a.nombre).join(', ');
+      alert(`No se puede finalizar la ronda. Falta calificar la respuesta de: ${names}`);
+      return;
+    }
+
     if (demoMode) {
       // 1. Auto-insert "(No respondió)" for any student who hasn't answered yet in demo mode
       const activeStudents = players.filter(p => p.id !== session.turno_actual_usuario_id);
