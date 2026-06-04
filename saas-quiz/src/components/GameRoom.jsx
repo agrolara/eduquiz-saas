@@ -42,6 +42,56 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       console.warn("AudioContext not supported or blocked:", err);
     }
   };
+
+  const triggerConfetti = () => {
+    const container = document.getElementById('confetti-container');
+    if (!container) return;
+
+    // Clear previous particles
+    container.innerHTML = '';
+
+    const colors = [
+      '#fbbf24', // Warm gold
+      '#f59e0b', // Amber
+      '#10b981', // Emerald
+      '#3b82f6', // Indigo
+      '#6366f1', // Indigo-Purple
+      '#8b5cf6', // Violet
+      '#ec4899', // Pink
+      '#f43f5e'  // Deep Rose
+    ];
+
+    const particleCount = 75;
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'confetti-particle';
+
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const size = `${Math.floor(Math.random() * 8) + 6}px`;
+      const shapeRand = Math.random();
+      const shapeRadius = shapeRand > 0.6 ? '50%' : shapeRand > 0.3 ? '2px' : '0px';
+
+      const xStart = `${Math.floor(Math.random() * 100)}vw`;
+      const drift = Math.floor(Math.random() * 30) - 15;
+      const xEnd = `calc(${xStart} + ${drift}vw)`;
+      const yFall = `${Math.floor(Math.random() * 20) + 90}vh`;
+      const rotate = `${Math.floor(Math.random() * 720) - 360}deg`;
+      const delay = `${Math.floor(Math.random() * 800)}ms`;
+      const duration = `${Math.floor(Math.random() * 1500) + 2000}ms`;
+
+      particle.style.setProperty('--color', color);
+      particle.style.setProperty('--size', size);
+      particle.style.setProperty('--shape-radius', shapeRadius);
+      particle.style.setProperty('--x-start', xStart);
+      particle.style.setProperty('--x-end', xEnd);
+      particle.style.setProperty('--y-fall', yFall);
+      particle.style.setProperty('--rotate', rotate);
+      particle.style.setProperty('--delay', delay);
+      particle.style.setProperty('--duration', duration);
+
+      container.appendChild(particle);
+    }
+  };
   
   // Game States
   const [session, setSession] = useState(null);
@@ -49,6 +99,11 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [rankings, setRankings] = useState([]);
+
+  // Celebration States
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState(0);
+  const prevScoreRef = useRef(null);
 
   // File Upload States
   const [qFile, setQFile] = useState(null);
@@ -135,6 +190,42 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       playAlertSound('question');
     }
   }, [session?.estado, session?.turno_actual_usuario_id, question?.id, profile?.id]);
+
+  // Monitor score increases to trigger victory confetti
+  const myRank = rankings.find(r => r.usuario_id === profile?.id);
+  const currentScore = myRank ? myRank.puntaje_total : 0;
+
+  useEffect(() => {
+    if (rankings.length === 0 || !profile?.id) return;
+
+    if (prevScoreRef.current === null) {
+      prevScoreRef.current = currentScore;
+      return;
+    }
+
+    if (currentScore > prevScoreRef.current) {
+      const gain = currentScore - prevScoreRef.current;
+      setPointsEarned(gain);
+      setShowCelebration(true);
+      
+      // Delay slightly to ensure confetti DOM is ready
+      const confettiTimeout = setTimeout(() => {
+        triggerConfetti();
+      }, 50);
+
+      const hideTimeout = setTimeout(() => {
+        setShowCelebration(false);
+      }, 5000);
+
+      prevScoreRef.current = currentScore;
+      return () => {
+        clearTimeout(confettiTimeout);
+        clearTimeout(hideTimeout);
+      };
+    } else if (currentScore < prevScoreRef.current) {
+      prevScoreRef.current = currentScore;
+    }
+  }, [currentScore, rankings, profile?.id]);
 
   // Polling fallback: fetch answers every 3 seconds during respuesta phase
   useEffect(() => {
@@ -1308,6 +1399,31 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           </div>
         </div>
       </div>
+
+      {/* Confetti Container DOM target */}
+      <div id="confetti-container" />
+
+      {/* Celebration overlay modal */}
+      {showCelebration && (
+        <div className="celebration-overlay" onClick={() => setShowCelebration(false)}>
+          <div className="celebration-card-outer double-bezel-outer" onClick={(e) => e.stopPropagation()}>
+            <div className="celebration-card-inner double-bezel-inner">
+              <div className="celebrate-icon-ring">
+                🏆
+              </div>
+              <h2 className="celebrate-title">
+                {pointsEarned >= 10 ? '¡Excelente respuesta! 🌟' : '¡Buen trabajo! 👍'}
+              </h2>
+              <p className="celebrate-subtitle">
+                Has respondido correctamente y ayudado al aula. ¡Sigue así para liderar el podio!
+              </p>
+              <div className="celebrate-score-badge">
+                <span>+{pointsEarned} PUNTOS</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

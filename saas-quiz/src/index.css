@@ -1593,6 +1593,169 @@ button, input, select, textarea {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
 }
 
+/* ==========================================================================
+   Victory Celebration & CSS Confetti System
+   ========================================================================== */
+
+/* Confetti Container Layer */
+#confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Confetti Particle dynamic styles */
+.confetti-particle {
+  position: absolute;
+  top: -20px;
+  width: var(--size);
+  height: var(--size);
+  background-color: var(--color);
+  border-radius: var(--shape-radius);
+  opacity: 0.9;
+  will-change: transform, opacity;
+  animation: confetti-fall var(--duration) var(--delay) cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(var(--x-start), -20px, 0) rotate(0deg);
+    opacity: 1;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--x-end), var(--y-fall), 0) rotate(var(--rotate));
+    opacity: 0;
+  }
+}
+
+/* Fullscreen Overlay with progressive blur reveal */
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  animation: fade-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* Elastic popup animation for the celebration card */
+.celebration-card-outer {
+  max-width: 420px;
+  width: 90%;
+  transform: scale(0.85) translateY(30px);
+  opacity: 0;
+  animation: celebrate-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards;
+}
+
+.celebration-card-inner {
+  text-align: center;
+  padding: 44px 36px;
+  background: radial-gradient(circle at top, hsl(var(--hue-warning), 90%, 96%) 0%, var(--bg-card) 65%);
+  border-color: #fde68a !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gold ray effect in inner background */
+.celebration-card-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, rgba(255,255,255,0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.celebration-card-inner > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes celebrate-pop {
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Golden Pulsing Trofeo Ring */
+.celebrate-icon-ring {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--warning), #fbbf24);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 28px -6px rgba(217, 119, 6, 0.45);
+  animation: pulse-ring 2.2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+.celebrate-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--brand-dark);
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.celebrate-subtitle {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+.celebrate-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--warning-bg);
+  color: #b45309;
+  padding: 10px 24px;
+  border-radius: var(--radius-round);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+  border: 1px solid #fde68a;
+  transform: rotate(-1.5deg);
+}
+
+
 
 
 
