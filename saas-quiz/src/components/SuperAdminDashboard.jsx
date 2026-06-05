@@ -213,6 +213,24 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleDeleteCourse = async (courseId) => {
+    if (!confirm("¿Seguro que deseas eliminar este curso y toda su información?")) return;
+
+    if (demoMode) {
+      setCourses(prev => prev.filter(c => c.id !== courseId));
+      setAllCourses(prev => prev.filter(c => c.id !== courseId));
+      return;
+    }
+
+    const { error } = await supabase.from('cursos').delete().eq('id', courseId);
+    if (error) {
+      alert("Error al eliminar curso: " + error.message);
+    } else {
+      setCourses(prev => prev.filter(c => c.id !== courseId));
+      setAllCourses(prev => prev.filter(c => c.id !== courseId));
+    }
+  };
+
   const handleUpdateAdminEmail = async (courseId, newEmail) => {
     if (demoMode) {
       syncCourseUpdate(courseId, c => ({ ...c, admin_email: newEmail || null }));
@@ -464,6 +482,7 @@ export default function SuperAdminDashboard() {
                           <th>Curso</th>
                           <th style={{ textAlign: 'center' }}>Plan</th>
                           <th>Administrador (Apoderado)</th>
+                          <th style={{ textAlign: 'center', width: '60px' }}>Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -550,6 +569,15 @@ export default function SuperAdminDashboard() {
                                     </div>
                                   </div>
                                 )}
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <button 
+                                  onClick={() => handleDeleteCourse(course.id)}
+                                  style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'inline-flex', padding: '6px', borderRadius: '6px' }}
+                                  title="Eliminar Curso"
+                                >
+                                  <Trash size={16} />
+                                </button>
                               </td>
                             </tr>
                           );
