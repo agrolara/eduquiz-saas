@@ -176,6 +176,19 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const isMyTurn = session?.turno_actual_usuario_id === profile?.id;
   const currentDrawer = players.find(p => p.id === session?.turno_actual_usuario_id);
 
+  // Debug logs for diagnosing turn issues
+  useEffect(() => {
+    if (session) {
+      console.log("=== EduQuiz Turn Debug ===");
+      console.log("Estado de sesión:", session.estado);
+      console.log("ID del jugador de turno:", session.turno_actual_usuario_id);
+      console.log("ID del perfil actual logueado:", profile?.id);
+      console.log("¿Es mi turno?:", isMyTurn);
+      console.log("Nombre del jugador de turno:", currentDrawer?.nombre);
+      console.log("==========================");
+    }
+  }, [session, profile, isMyTurn, currentDrawer]);
+
   // Initial Mock State for Demo Mode
   const demoPlayers = [
     { id: 'demo-student-benjamin', nombre: 'Benjamín Díaz', rol: 'jugador', email: 'alumno.benjamin@gmail.com' },
@@ -211,7 +224,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [sessionId, demoMode]);
+  }, [sessionId, demoMode, profile]);
 
   useEffect(() => {
     // Sync Timer
