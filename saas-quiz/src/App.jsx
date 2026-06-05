@@ -442,7 +442,7 @@ function AppContent() {
               <path d="M6 10v4c0 3.3 2.7 6 6 6s6-2.7 6-6v-4" />
             </svg>
           </div>
-          <span style={!user ? { color: '#ffffff' } : {}}>EduQuiz</span>
+          <span className="hide-mobile" style={!user ? { color: '#ffffff' } : {}}>EduQuiz</span>
         </div>
         
         <div className="nav-links">
@@ -450,7 +450,7 @@ function AppContent() {
             <>
               <div className="user-profile-badge">
                 <span className="user-avatar">{profile?.nombre ? profile.nombre[0] : 'U'}</span>
-                <div>
+                <div className="hide-mobile">
                   <div style={{ fontWeight: '800', fontSize: '13px', color: '#1e293b' }}>{profile?.nombre}</div>
                   <div className="user-role-label">
                     {profile?.rol === 'super_admin' 
@@ -468,7 +468,8 @@ function AppContent() {
                 onClick={signOut} 
                 style={{ padding: '8px 16px', fontSize: '13px' }}
               >
-                <SignOut size={16} /> Cerrar Sesión
+                <SignOut size={16} />
+                <span className="hide-mobile"> Cerrar Sesión</span>
               </button>
             </>
           ) : (
