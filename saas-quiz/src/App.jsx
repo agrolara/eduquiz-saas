@@ -240,7 +240,7 @@ function AppContent() {
       )}
 
       {/* Main Navbar */}
-      <header className="app-header">
+      <header className="app-header" style={!user ? { backgroundColor: '#030712', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#ffffff' } : {}}>
         <div className="app-logo">
           <div className="logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '22px', height: '22px' }}>
@@ -250,7 +250,7 @@ function AppContent() {
               <path d="M6 10v4c0 3.3 2.7 6 6 6s6-2.7 6-6v-4" />
             </svg>
           </div>
-          <span>EduQuiz</span>
+          <span style={!user ? { color: '#ffffff' } : {}}>EduQuiz</span>
         </div>
         
         <div className="nav-links">
