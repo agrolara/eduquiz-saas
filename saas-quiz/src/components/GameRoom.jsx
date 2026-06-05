@@ -134,6 +134,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const [lobbyTimeLeft, setLobbyTimeLeft] = useState(null);
   const lobbyTimerInterval = useRef(null);
 
+  // Supabase Presence online players
+  const [onlinePlayers, setOnlinePlayers] = useState([]);
+  const activePlayers = demoMode ? players : onlinePlayers;
+
   useEffect(() => {
     activeQuestionIdRef.current = question?.id;
   }, [question?.id]);
@@ -224,7 +228,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     if (session?.estado !== 'esperando') return;
     
     // Establishing turn order
-    const turnOrder = players.map(p => p.id);
+    const turnOrder = activePlayers.map(p => p.id);
     if (turnOrder.length === 0) return; // Wait for players list
     
     if (demoMode) {
@@ -284,7 +288,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     tick();
     lobbyTimerInterval.current = setInterval(tick, 1000);
     return () => clearInterval(lobbyTimerInterval.current);
-  }, [session?.estado, session?.creado_en, players, demoMode]);
+  }, [session?.estado, session?.creado_en, activePlayers, demoMode]);
 
   useEffect(() => {
     if (question?.id && !demoMode) {
@@ -588,8 +592,41 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rankings' }, () => {
         fetchRankings();
-      })
-      .subscribe();
+      });
+
+    if (!demoMode && profile) {
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState();
+          const presences = [];
+          Object.keys(state).forEach((key) => {
+            state[key].forEach((presence) => {
+              if (presence.rol === 'jugador') {
+                if (!presences.some(p => p.id === presence.id)) {
+                  presences.push({
+                    id: presence.id,
+                    nombre: presence.nombre,
+                    email: presence.email
+                  });
+                }
+              }
+            });
+          });
+          setOnlinePlayers(presences);
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.track({
+              id: profile.id,
+              nombre: profile.nombre,
+              email: profile.email,
+              rol: profile.rol
+            });
+          }
+        });
+    } else {
+      channel.subscribe();
+    }
 
     return () => {
       supabase.removeChannel(channel);
@@ -745,7 +782,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   };
 
   const handleStartGame = async () => {
-    const turnOrder = players.map(p => p.id);
+    const turnOrder = activePlayers.map(p => p.id);
     if (demoMode) {
       setSession(s => ({
         ...s,
@@ -1371,9 +1408,9 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                 </div>
 
                 <div style={{ maxWidth: '400px', margin: '0 auto 32px' }}>
-                  <h4 style={{ marginBottom: '12px', textAlign: 'left', fontWeight: '800' }}>Jugadores en línea ({players.length}):</h4>
+                  <h4 style={{ marginBottom: '12px', textAlign: 'left', fontWeight: '800' }}>Jugadores en línea ({activePlayers.length}):</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    {players.map(p => (
+                    {activePlayers.map(p => (
                       <div key={p.id} className="user-profile-badge" style={{ justifyContent: 'center' }}>
                         <span className="user-avatar">{p.nombre[0]}</span>
                         <span style={{ fontSize: '13px', fontWeight: '700' }}>{p.nombre}</span>
