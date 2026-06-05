@@ -21,6 +21,125 @@ function AppContent() {
   const [activeDbSession, setActiveDbSession] = useState(null);
   const [loadingDbSession, setLoadingDbSession] = useState(false);
 
+  // Notifications and Service Worker States
+  const [notificationPermission, setNotificationPermission] = useState(
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default'
+  );
+  const [swRegistration, setSwRegistration] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  // Keep ref of activeSession to use in Supabase subscription without resubscribing
+  const activeSessionRef = React.useRef(activeSession);
+  useEffect(() => {
+    activeSessionRef.current = activeSession;
+  }, [activeSession]);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => {
+          console.log('SW registrado:', reg);
+          setSwRegistration(reg);
+        })
+        .catch(err => console.error('Error SW:', err));
+        
+      const handleMessage = (event) => {
+        if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
+          const { sessionId, sessionName } = event.data.payload || {};
+          if (sessionId && sessionName) {
+            handleJoinSession(sessionId, sessionName);
+          }
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+    }
+  }, []);
+
+  const playNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const playTone = (frequency, startTime, duration, vol = 0.12) => {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = frequency;
+        gainNode.gain.setValueAtTime(vol, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+      
+      const now = audioCtx.currentTime;
+      playTone(523.25, now, 0.1);      // C5
+      playTone(659.25, now + 0.08, 0.1); // E5
+      playTone(783.99, now + 0.16, 0.1); // G5
+      playTone(1046.50, now + 0.24, 0.3); // C6
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const triggerPushNotification = (title, body, sessionId, sessionName) => {
+    playNotificationSound();
+    
+    // In-app visual toast
+    setToast({ title, body, sessionId, sessionName });
+    setTimeout(() => {
+      setToast(prev => prev && prev.sessionId === sessionId ? null : prev);
+    }, 8500);
+
+    // Browser native push notification
+    if (notificationPermission === 'granted') {
+      if (swRegistration) {
+        swRegistration.active?.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          payload: {
+            title,
+            body,
+            data: {
+              clickAction: window.location.origin,
+              sessionId,
+              sessionName
+            }
+          }
+        });
+      } else {
+        try {
+          new Notification(title, {
+            body,
+            icon: '/favicon.svg'
+          });
+        } catch (e) {
+          console.warn('Native notification fallback failed:', e);
+        }
+      }
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('Tu navegador no soporta notificaciones de escritorio.');
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      if (permission === 'granted') {
+        triggerPushNotification(
+          "¡Notificaciones Activas! 🔔",
+          "Recibirás una alerta aquí cuando tu profesor inicie una nueva partida programada.",
+          "test-notification",
+          "Test"
+        );
+      }
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+    }
+  };
+
   useEffect(() => {
     if (demoMode || !profile?.curso_id) return;
 
@@ -51,7 +170,18 @@ function AppContent() {
         schema: 'public', 
         table: 'sesiones_juego', 
         filter: `curso_id=eq.${profile.curso_id}` 
-      }, () => {
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newSession = payload.new;
+          if (profile?.rol === 'jugador' && (!activeSessionRef.current || activeSessionRef.current.id !== newSession.id)) {
+            triggerPushNotification(
+              "¡Nueva Partida Programada! 🚀",
+              "partida empieza en 10 minutos conectate pronto o quedaras fuera de esta partida",
+              newSession.id,
+              newSession.nombre
+            );
+          }
+        }
         fetchActiveSession();
       })
       .subscribe();
@@ -235,6 +365,22 @@ function AppContent() {
             >
               Benjamín (Alumno)
             </button>
+            {profile?.rol === 'jugador' && (
+              <button 
+                className="demo-btn" 
+                style={{ backgroundColor: 'var(--accent)', border: 'none', marginLeft: '12px', color: 'white', fontWeight: 'bold' }}
+                onClick={() => {
+                  triggerPushNotification(
+                    "¡Nueva Partida Programada! 🚀",
+                    "partida empieza en 10 minutos conectate pronto o quedaras fuera de esta partida",
+                    "demo-session-active",
+                    "Trivia de Geografía"
+                  );
+                }}
+              >
+                🔔 Simular Notificación
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -334,7 +480,53 @@ function AppContent() {
 
             {/* PLAYER (STUDENT) VIEW */}
             {profile?.rol === 'jugador' && (
-              <div className="student-grid">
+              <>
+                {notificationPermission !== 'granted' && (
+                  <div className="card notification-prompt-card animate-slide-in" style={{
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12))',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '24px',
+                    marginBottom: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '20px',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: 'var(--shadow-md)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div className="pulse-bell-container" style={{
+                        fontSize: '28px',
+                        background: 'rgba(255, 255, 255, 0.6)',
+                        borderRadius: '50%',
+                        width: '56px',
+                        height: '56px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: 'var(--shadow-sm)'
+                      }}>🔔</div>
+                      <div style={{ textAlign: 'left' }}>
+                        <h4 style={{ margin: '0 0 6px', fontWeight: '800', fontSize: '16px', color: 'var(--text-main)' }}>¿Quieres recibir avisos en tiempo real?</h4>
+                        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                          Activa las notificaciones de escritorio para saber al instante cuando tu profesor inicie una nueva partida programada de 10 minutos.
+                        </p>
+                      </div>
+                    </div>
+                    <button className="btn btn-primary animate-hover" onClick={requestNotificationPermission} style={{
+                      whiteSpace: 'nowrap',
+                      background: 'var(--brand)',
+                      color: 'white',
+                      padding: '12px 24px',
+                      boxShadow: 'var(--shadow-glow)'
+                    }}>
+                      Activar Alertas
+                    </button>
+                  </div>
+                )}
+                
+                <div className="student-grid">
                 
                 {/* Left Column: Game Lobby & Ranking */}
                 <div>
@@ -561,8 +753,75 @@ function AppContent() {
                 </div>
 
               </div>
+            </>
             )}
             
+          </div>
+        )}
+
+        {/* Visual Toast Notification Overlay */}
+        {toast && (
+          <div className="in-app-toast-container animate-slide-in" onClick={() => {
+            if (toast.sessionId !== 'test-notification') {
+              handleJoinSession(toast.sessionId, toast.sessionName);
+            }
+            setToast(null);
+          }} style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 99999,
+            maxWidth: '400px',
+            width: 'calc(100% - 48px)',
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(99, 102, 241, 0.35)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px 20px',
+            boxShadow: 'var(--shadow-lg)',
+            cursor: 'pointer',
+            display: 'flex',
+            gap: '16px',
+            transition: 'var(--transition-normal)'
+          }}>
+            <div style={{
+              background: 'var(--brand-light)',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <GameController size={24} weight="fill" color="var(--brand)" />
+            </div>
+            <div style={{ flexGrow: 1, textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>EduQuiz • Ahora</span>
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  setToast(null);
+                }} style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  padding: '0 4px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>×</button>
+              </div>
+              <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '800', color: 'var(--text-main)' }}>{toast.title}</h4>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.4' }}>{toast.body}</p>
+              {toast.sessionId !== 'test-notification' && (
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700', color: 'var(--brand)' }}>
+                  <span>Entrar a Jugar</span>
+                  <span>→</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>

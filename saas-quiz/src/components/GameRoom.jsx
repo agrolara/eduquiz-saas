@@ -130,6 +130,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const timerInterval = useRef(null);
   const activeQuestionIdRef = useRef(null);
 
+  // Scheduled Lobby Timer
+  const [lobbyTimeLeft, setLobbyTimeLeft] = useState(null);
+  const lobbyTimerInterval = useRef(null);
+
   useEffect(() => {
     activeQuestionIdRef.current = question?.id;
   }, [question?.id]);
@@ -214,6 +218,73 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
     return () => clearInterval(timerInterval.current);
   }, [session?.estado, session?.temporizador_fin]);
+
+  // Auto-Start Game scheduled timer
+  const autoStartGame = async () => {
+    if (session?.estado !== 'esperando') return;
+    
+    // Establishing turn order
+    const turnOrder = players.map(p => p.id);
+    if (turnOrder.length === 0) return; // Wait for players list
+    
+    if (demoMode) {
+      setSession(s => ({
+        ...s,
+        estado: 'pregunta',
+        turno_actual_usuario_id: turnOrder[0],
+        orden_turnos: turnOrder
+      }));
+      return;
+    }
+
+    try {
+      // Optimistic concurrency locking: only update if session.estado is still 'esperando'
+      const { error } = await supabase
+        .from('sesiones_juego')
+        .update({
+          estado: 'pregunta',
+          turno_actual_usuario_id: turnOrder[0],
+          orden_turnos: turnOrder
+        })
+        .eq('id', sessionId)
+        .eq('estado', 'esperando');
+      
+      if (error) {
+        console.error("Error auto-starting game:", error.message);
+      }
+    } catch (err) {
+      console.error("Auto-start crash:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.estado !== 'esperando') {
+      setLobbyTimeLeft(null);
+      clearInterval(lobbyTimerInterval.current);
+      return;
+    }
+
+    const createdTime = session.creado_en ? new Date(session.creado_en).getTime() : Date.now();
+    // 10 minutes = 10 * 60 * 1000 = 600000ms
+    const scheduledTime = createdTime + 10 * 60 * 1000;
+
+    const tick = () => {
+      const now = Date.now();
+      const difference = Math.floor((scheduledTime - now) / 1000);
+
+      if (difference <= 0) {
+        clearInterval(lobbyTimerInterval.current);
+        setLobbyTimeLeft(0);
+        autoStartGame();
+      } else {
+        setLobbyTimeLeft(difference);
+      }
+    };
+
+    tick();
+    lobbyTimerInterval.current = setInterval(tick, 1000);
+    return () => clearInterval(lobbyTimerInterval.current);
+  }, [session?.estado, session?.creado_en, players, demoMode]);
 
   useEffect(() => {
     if (question?.id && !demoMode) {
@@ -1239,6 +1310,66 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                   Estamos esperando a que todos los compañeros se conecten a la sesión.
                 </p>
 
+                {/* Lobby Countdown Timer */}
+                <div className="lobby-countdown-card" style={{
+                  margin: '24px auto',
+                  padding: '24px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(168, 85, 247, 0.04))',
+                  border: '1px dashed var(--border-focus)',
+                  maxWidth: '450px',
+                  textAlign: 'center',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <span style={{
+                    textTransform: 'uppercase',
+                    fontSize: '11px',
+                    letterSpacing: '0.12em',
+                    fontWeight: 800,
+                    color: 'var(--brand)',
+                    display: 'block',
+                    marginBottom: '8px'
+                  }}>⏳ Partida Programada</span>
+                  
+                  <div className="countdown-clock" style={{
+                    fontSize: '56px',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 800,
+                    color: 'var(--text-main)',
+                    letterSpacing: '-0.02em',
+                    lineHeight: '1',
+                    marginBottom: '12px',
+                    textShadow: '0 0 16px rgba(99, 102, 241, 0.15)'
+                  }}>
+                    {lobbyTimeLeft !== null ? formatTime(lobbyTimeLeft) : '10:00'}
+                  </div>
+
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px', lineHeight: '1.4' }}>
+                    La partida está programada para empezar automáticamente en 10 minutos para dar tiempo a los alumnos de conectarse.
+                  </p>
+
+                  {/* Progress bar */}
+                  <div style={{
+                    height: '8px',
+                    backgroundColor: 'var(--border-light)',
+                    borderRadius: 'var(--radius-round)',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
+                    <div className="countdown-progress-bar" style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: `${lobbyTimeLeft !== null ? Math.max(0, Math.min(100, (lobbyTimeLeft / 600) * 100)) : 100}%`,
+                      backgroundColor: 'var(--brand)',
+                      backgroundImage: 'linear-gradient(90deg, var(--brand), var(--accent))',
+                      transition: 'width 1s linear',
+                      borderRadius: 'var(--radius-round)'
+                    }} />
+                  </div>
+                </div>
+
                 <div style={{ maxWidth: '400px', margin: '0 auto 32px' }}>
                   <h4 style={{ marginBottom: '12px', textAlign: 'left', fontWeight: '800' }}>Jugadores en línea ({players.length}):</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -1251,10 +1382,14 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                   </div>
                 </div>
 
-                {(profile.rol === 'admin_curso' || profile.rol === 'super_admin' || players.length > 0) && (
-                  <button className="btn btn-primary" onClick={handleStartGame}>
-                    Iniciar Desafío Trivia
+                {(profile?.rol === 'admin_curso' || profile?.rol === 'super_admin') ? (
+                  <button className="btn btn-primary" onClick={handleStartGame} style={{ marginTop: '16px' }}>
+                    Iniciar Ahora (Manual)
                   </button>
+                ) : (
+                  <div style={{ marginTop: '16px', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                    Esperando a que comience la partida...
+                  </div>
                 )}
               </div>
             </div>
