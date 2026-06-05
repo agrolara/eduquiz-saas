@@ -27,6 +27,30 @@ function AppContent() {
   );
   const [swRegistration, setSwRegistration] = useState(null);
   const [toast, setToast] = useState(null);
+  const [demoNotificationCountdown, setDemoNotificationCountdown] = useState(null);
+
+  const handleSimulateDelayedNotification = () => {
+    if (demoNotificationCountdown !== null) return;
+    
+    let currentSeconds = 5;
+    setDemoNotificationCountdown(currentSeconds);
+    
+    const interval = setInterval(() => {
+      currentSeconds -= 1;
+      if (currentSeconds <= 0) {
+        clearInterval(interval);
+        setDemoNotificationCountdown(null);
+        triggerPushNotification(
+          "¡Nueva Partida Programada! 🚀",
+          "partida empieza en 10 minutos conectate pronto o quedaras fuera de esta partida",
+          "demo-session-active",
+          "Trivia de Geografía"
+        );
+      } else {
+        setDemoNotificationCountdown(currentSeconds);
+      }
+    }, 1000);
+  };
 
   // Keep ref of activeSession to use in Supabase subscription without resubscribing
   const activeSessionRef = React.useRef(activeSession);
@@ -98,11 +122,12 @@ function AppContent() {
 
     // Browser native push notification
     if (notificationPermission === 'granted') {
+      const iconUrl = 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png';
       if (swRegistration) {
         swRegistration.showNotification(title, {
           body,
-          icon: '/favicon.svg',
-          badge: '/favicon.svg',
+          icon: iconUrl,
+          badge: iconUrl,
           vibrate: [200, 100, 200],
           data: {
             clickAction: window.location.origin,
@@ -112,7 +137,7 @@ function AppContent() {
         }).catch(err => {
           console.warn("SW showNotification failed, using fallback:", err);
           try {
-            new Notification(title, { body, icon: '/favicon.svg' });
+            new Notification(title, { body, icon: iconUrl });
           } catch (e) {
             console.error("Direct Notification constructor failed:", e);
           }
@@ -121,7 +146,7 @@ function AppContent() {
         try {
           new Notification(title, {
             body,
-            icon: '/favicon.svg'
+            icon: iconUrl
           });
         } catch (e) {
           console.warn('Native notification fallback failed:', e);
@@ -377,20 +402,30 @@ function AppContent() {
               Benjamín (Alumno)
             </button>
             {profile?.rol === 'jugador' && (
-              <button 
-                className="demo-btn" 
-                style={{ backgroundColor: 'var(--accent)', border: 'none', marginLeft: '12px', color: 'white', fontWeight: 'bold' }}
-                onClick={() => {
-                  triggerPushNotification(
-                    "¡Nueva Partida Programada! 🚀",
-                    "partida empieza en 10 minutos conectate pronto o quedaras fuera de esta partida",
-                    "demo-session-active",
-                    "Trivia de Geografía"
-                  );
-                }}
-              >
-                🔔 Simular Notificación
-              </button>
+              <>
+                <button 
+                  className="demo-btn" 
+                  style={{ backgroundColor: 'var(--accent)', border: 'none', marginLeft: '12px', color: 'white', fontWeight: 'bold' }}
+                  onClick={() => {
+                    triggerPushNotification(
+                      "¡Nueva Partida Programada! 🚀",
+                      "partida empieza en 10 minutos conectate pronto o quedaras fuera de esta partida",
+                      "demo-session-active",
+                      "Trivia de Geografía"
+                    );
+                  }}
+                >
+                  🔔 Simular Ahora
+                </button>
+                <button 
+                  className="demo-btn" 
+                  style={{ backgroundColor: '#f59e0b', border: 'none', marginLeft: '8px', color: 'white', fontWeight: 'bold' }}
+                  onClick={handleSimulateDelayedNotification}
+                  disabled={demoNotificationCountdown !== null}
+                >
+                  {demoNotificationCountdown !== null ? `⏱️ Enviando en ${demoNotificationCountdown}s...` : '⏱️ Simular en 5s (Cierra la App)'}
+                </button>
+              </>
             )}
           </div>
         </div>

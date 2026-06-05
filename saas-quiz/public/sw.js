@@ -13,10 +13,10 @@ self.addEventListener('message', (event) => {
     event.waitUntil(
       self.registration.showNotification(title, {
         body,
-        icon: icon || '/favicon.svg',
+        icon: icon || 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png',
         data: data || {},
         vibrate: [200, 100, 200],
-        badge: '/favicon.svg',
+        badge: 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png',
         tag: 'eduquiz-session-start'
       })
     );
