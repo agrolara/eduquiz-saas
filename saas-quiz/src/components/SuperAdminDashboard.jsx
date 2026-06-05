@@ -8,6 +8,7 @@ export default function SuperAdminDashboard() {
   const [schools, setSchools] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [courses, setCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
   
   // Form States
   const [newSchoolName, setNewSchoolName] = useState('');
@@ -17,7 +18,7 @@ export default function SuperAdminDashboard() {
   const [editingEmail, setEditingEmail] = useState('');
 
   // Subscription editing states
-  const [editingPlanSchoolId, setEditingPlanSchoolId] = useState(null);
+  const [editingPlanCourseId, setEditingPlanCourseId] = useState(null);
   const [editPlanForm, setEditPlanForm] = useState({
     plan_tipo: 'trial',
     plan_valor_mensual: 0,
@@ -30,50 +31,51 @@ export default function SuperAdminDashboard() {
 
   // Demo Initial Data
   const demoSchools = [
-    { 
-      id: 'school-1', nombre: 'Colegio San Agustín',
-      plan_tipo: 'activo', plan_valor_mensual: 45000,
-      plan_fecha_inicio: '2026-01-15T00:00:00Z', plan_fecha_vencimiento: null,
-      plan_notas: 'Cliente desde enero 2026. Convenio anual firmado.'
-    },
-    { 
-      id: 'school-2', nombre: 'Liceo Bicentenario de Santiago',
-      plan_tipo: 'trial', plan_valor_mensual: 0,
-      plan_fecha_inicio: '2026-06-01T00:00:00Z', plan_fecha_vencimiento: '2026-06-30T23:59:59Z',
-      plan_notas: 'Prueba solicitada por director académico. Evaluar conversión en julio.'
-    },
-    {
-      id: 'school-3', nombre: 'Escuela Rural Valle Verde',
-      plan_tipo: 'gratuito', plan_valor_mensual: 0,
-      plan_fecha_inicio: '2026-03-01T00:00:00Z', plan_fecha_vencimiento: null,
-      plan_notas: 'Convenio municipal de educación rural. Acceso gratuito permanente.'
-    },
-    {
-      id: 'school-4', nombre: 'Instituto Nacional Barros Arana',
-      plan_tipo: 'suspendido', plan_valor_mensual: 35000,
-      plan_fecha_inicio: '2026-02-10T00:00:00Z', plan_fecha_vencimiento: '2026-05-10T23:59:59Z',
-      plan_notas: 'Pago de mayo pendiente. Contactar al encargado de finanzas.'
-    },
-    {
-      id: 'school-5', nombre: 'Colegio Particular Los Andes',
-      plan_tipo: 'cancelado', plan_valor_mensual: 0,
-      plan_fecha_inicio: '2026-01-20T00:00:00Z', plan_fecha_vencimiento: '2026-04-20T23:59:59Z',
-      plan_notas: 'Cancelado por falta de uso. Posible reactivación en segundo semestre.'
-    }
+    { id: 'school-1', nombre: 'Colegio San Agustín' },
+    { id: 'school-2', nombre: 'Liceo Bicentenario de Santiago' }
   ];
 
   const demoCourses = [
-    { id: 'course-1', colegio_id: 'school-1', nombre: '7° Básico A', admin_email: 'profesora.teresa@gmail.com' },
-    { id: 'course-2', colegio_id: 'school-1', nombre: '8° Básico B', admin_email: 'materiales.integrity@gmail.com' },
-    { id: 'course-3', colegio_id: 'school-2', nombre: '1° Medio C', admin_email: 'director@liceo.cl' }
+    { 
+      id: 'course-1', colegio_id: 'school-1', nombre: '7° Básico A', admin_email: 'profesora.teresa@gmail.com',
+      plan_tipo: 'activo', plan_valor_mensual: 45000,
+      plan_fecha_inicio: '2026-01-15T00:00:00Z', plan_fecha_vencimiento: null,
+      plan_notas: 'Convenio anual firmado con apoderados.'
+    },
+    { 
+      id: 'course-2', colegio_id: 'school-1', nombre: '8° Básico B', admin_email: 'materiales.integrity@gmail.com',
+      plan_tipo: 'trial', plan_valor_mensual: 0,
+      plan_fecha_inicio: '2026-06-01T00:00:00Z', plan_fecha_vencimiento: '2026-06-30T23:59:59Z',
+      plan_notas: 'Prueba solicitada por jefe de UTP.'
+    },
+    { 
+      id: 'course-3', colegio_id: 'school-2', nombre: '1° Medio C', admin_email: 'director@liceo.cl',
+      plan_tipo: 'gratuito', plan_valor_mensual: 0,
+      plan_fecha_inicio: '2026-03-01T00:00:00Z', plan_fecha_vencimiento: null,
+      plan_notas: 'Convenio municipal. Acceso gratuito permanente.'
+    },
+    {
+      id: 'course-4', colegio_id: 'school-2', nombre: '2° Medio A', admin_email: null,
+      plan_tipo: 'suspendido', plan_valor_mensual: 35000,
+      plan_fecha_inicio: '2026-02-10T00:00:00Z', plan_fecha_vencimiento: '2026-05-10T23:59:59Z',
+      plan_notas: 'Pago de mayo pendiente.'
+    },
+    {
+      id: 'course-5', colegio_id: 'school-1', nombre: '6° Básico C', admin_email: null,
+      plan_tipo: 'cancelado', plan_valor_mensual: 0,
+      plan_fecha_inicio: '2026-01-20T00:00:00Z', plan_fecha_vencimiento: '2026-04-20T23:59:59Z',
+      plan_notas: 'Cancelado por falta de uso.'
+    }
   ];
 
   useEffect(() => {
     if (demoMode) {
       setSchools(demoSchools);
+      setAllCourses(demoCourses);
       return;
     }
     fetchSchools();
+    fetchAllCourses();
   }, [demoMode]);
 
   useEffect(() => {
@@ -91,6 +93,15 @@ export default function SuperAdminDashboard() {
     else setSchools(data);
   };
 
+  const fetchAllCourses = async () => {
+    const { data, error } = await supabase
+      .from('cursos')
+      .select('*, colegios(nombre)')
+      .order('nombre');
+    if (error) console.error("Error fetching all courses:", error);
+    else setAllCourses(data);
+  };
+
   const fetchCourses = async (schoolId) => {
     const { data, error } = await supabase
       .from('cursos')
@@ -101,18 +112,23 @@ export default function SuperAdminDashboard() {
     else setCourses(data);
   };
 
+  // Sync helper: update both courses and allCourses states
+  const syncCourseUpdate = (courseId, updater) => {
+    setCourses(prev => prev.map(c => c.id === courseId ? updater(c) : c));
+    setAllCourses(prev => prev.map(c => c.id === courseId ? updater(c) : c));
+  };
+
+  const syncCourseAdd = (newCourse) => {
+    setCourses(prev => [...prev, newCourse]);
+    setAllCourses(prev => [...prev, newCourse]);
+  };
+
   const handleAddSchool = async (e) => {
     e.preventDefault();
     if (!newSchoolName) return;
 
     if (demoMode) {
-      const newSchool = { 
-        id: `school-${Date.now()}`, nombre: newSchoolName,
-        plan_tipo: 'trial', plan_valor_mensual: 0,
-        plan_fecha_inicio: new Date().toISOString(),
-        plan_fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        plan_notas: null
-      };
+      const newSchool = { id: `school-${Date.now()}`, nombre: newSchoolName };
       setSchools([...schools, newSchool]);
       setNewSchoolName('');
       return;
@@ -140,9 +156,14 @@ export default function SuperAdminDashboard() {
         id: `course-${Date.now()}`,
         colegio_id: selectedSchool.id,
         nombre: newCourseName,
-        admin_email: newAdminEmail || null
+        admin_email: newAdminEmail || null,
+        plan_tipo: 'trial',
+        plan_valor_mensual: 0,
+        plan_fecha_inicio: new Date().toISOString(),
+        plan_fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        plan_notas: null
       };
-      setCourses([...courses, newCourse]);
+      syncCourseAdd(newCourse);
       setNewCourseName('');
       setNewAdminEmail('');
       return;
@@ -160,7 +181,7 @@ export default function SuperAdminDashboard() {
     if (error) {
       alert("Error al guardar curso: " + error.message);
     } else {
-      setCourses([...courses, data[0]]);
+      syncCourseAdd(data[0]);
       setNewCourseName('');
       setNewAdminEmail('');
     }
@@ -172,7 +193,11 @@ export default function SuperAdminDashboard() {
 
     if (demoMode) {
       setSchools(schools.filter(s => s.id !== schoolId));
-      if (selectedSchool?.id === schoolId) setSelectedSchool(null);
+      setAllCourses(allCourses.filter(c => c.colegio_id !== schoolId));
+      if (selectedSchool?.id === schoolId) {
+        setSelectedSchool(null);
+        setCourses([]);
+      }
       return;
     }
 
@@ -180,13 +205,17 @@ export default function SuperAdminDashboard() {
     if (error) alert("Error al eliminar: " + error.message);
     else {
       setSchools(schools.filter(s => s.id !== schoolId));
-      if (selectedSchool?.id === schoolId) setSelectedSchool(null);
+      setAllCourses(allCourses.filter(c => c.colegio_id !== schoolId));
+      if (selectedSchool?.id === schoolId) {
+        setSelectedSchool(null);
+        setCourses([]);
+      }
     }
   };
 
   const handleUpdateAdminEmail = async (courseId, newEmail) => {
     if (demoMode) {
-      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: newEmail || null } : c));
+      syncCourseUpdate(courseId, c => ({ ...c, admin_email: newEmail || null }));
       setEditingCourseId(null);
       return;
     }
@@ -199,7 +228,7 @@ export default function SuperAdminDashboard() {
     if (error) {
       alert("Error al actualizar administrador: " + error.message);
     } else {
-      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: newEmail || null } : c));
+      syncCourseUpdate(courseId, c => ({ ...c, admin_email: newEmail || null }));
       setEditingCourseId(null);
     }
   };
@@ -208,7 +237,7 @@ export default function SuperAdminDashboard() {
     if (!confirm("¿Seguro que deseas eliminar al administrador de este curso?")) return;
 
     if (demoMode) {
-      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: null } : c));
+      syncCourseUpdate(courseId, c => ({ ...c, admin_email: null }));
       return;
     }
 
@@ -220,30 +249,30 @@ export default function SuperAdminDashboard() {
     if (error) {
       alert("Error al eliminar administrador: " + error.message);
     } else {
-      setCourses(courses.map(c => c.id === courseId ? { ...c, admin_email: null } : c));
+      syncCourseUpdate(courseId, c => ({ ...c, admin_email: null }));
     }
   };
 
-  // ─── Subscription Management Handlers ───
+  // ─── Subscription Management Handlers (now per COURSE) ───
 
-  const startEditingPlan = (school) => {
-    setEditingPlanSchoolId(school.id);
+  const startEditingPlan = (course) => {
+    setEditingPlanCourseId(course.id);
     setEditPlanForm({
-      plan_tipo: school.plan_tipo || 'trial',
-      plan_valor_mensual: school.plan_valor_mensual || 0,
-      plan_fecha_vencimiento: school.plan_fecha_vencimiento 
-        ? new Date(school.plan_fecha_vencimiento).toISOString().split('T')[0] 
+      plan_tipo: course.plan_tipo || 'trial',
+      plan_valor_mensual: course.plan_valor_mensual || 0,
+      plan_fecha_vencimiento: course.plan_fecha_vencimiento 
+        ? new Date(course.plan_fecha_vencimiento).toISOString().split('T')[0] 
         : '',
-      plan_notas: school.plan_notas || ''
+      plan_notas: course.plan_notas || ''
     });
   };
 
   const cancelEditingPlan = () => {
-    setEditingPlanSchoolId(null);
+    setEditingPlanCourseId(null);
     setEditPlanForm({ plan_tipo: 'trial', plan_valor_mensual: 0, plan_fecha_vencimiento: '', plan_notas: '' });
   };
 
-  const handleSavePlan = async (schoolId) => {
+  const handleSavePlan = async (courseId) => {
     const payload = {
       plan_tipo: editPlanForm.plan_tipo,
       plan_valor_mensual: editPlanForm.plan_tipo === 'activo' ? parseInt(editPlanForm.plan_valor_mensual) || 0 : 0,
@@ -254,39 +283,21 @@ export default function SuperAdminDashboard() {
     };
 
     if (demoMode) {
-      setSchools(schools.map(s => s.id === schoolId ? { ...s, ...payload } : s));
-      setEditingPlanSchoolId(null);
+      syncCourseUpdate(courseId, c => ({ ...c, ...payload }));
+      setEditingPlanCourseId(null);
       return;
     }
 
     const { error } = await supabase
-      .from('colegios')
+      .from('cursos')
       .update(payload)
-      .eq('id', schoolId);
+      .eq('id', courseId);
 
     if (error) {
       alert("Error al actualizar plan: " + error.message);
     } else {
-      setSchools(schools.map(s => s.id === schoolId ? { ...s, ...payload } : s));
-      setEditingPlanSchoolId(null);
-    }
-  };
-
-  const handleQuickPlanChange = async (schoolId, newPlanTipo) => {
-    if (demoMode) {
-      setSchools(schools.map(s => s.id === schoolId ? { ...s, plan_tipo: newPlanTipo } : s));
-      return;
-    }
-
-    const { error } = await supabase
-      .from('colegios')
-      .update({ plan_tipo: newPlanTipo })
-      .eq('id', schoolId);
-
-    if (error) {
-      alert("Error al cambiar plan: " + error.message);
-    } else {
-      setSchools(schools.map(s => s.id === schoolId ? { ...s, plan_tipo: newPlanTipo } : s));
+      syncCourseUpdate(courseId, c => ({ ...c, ...payload }));
+      setEditingPlanCourseId(null);
     }
   };
 
@@ -321,12 +332,17 @@ export default function SuperAdminDashboard() {
     return new Date(dateStr).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  // ─── KPI Calculations ───
+  const getSchoolName = (colegioId) => {
+    const school = schools.find(s => s.id === colegioId);
+    return school ? school.nombre : '—';
+  };
 
-  const kpiActivos = schools.filter(s => s.plan_tipo === 'activo' || s.plan_tipo === 'gratuito').length;
-  const kpiTrials = schools.filter(s => s.plan_tipo === 'trial').length;
-  const kpiIngresos = schools.filter(s => s.plan_tipo === 'activo').reduce((sum, s) => sum + (s.plan_valor_mensual || 0), 0);
-  const kpiProblemas = schools.filter(s => s.plan_tipo === 'suspendido' || s.plan_tipo === 'cancelado').length;
+  // ─── KPI Calculations (from ALL courses across all schools) ───
+
+  const kpiActivos = allCourses.filter(c => c.plan_tipo === 'activo' || c.plan_tipo === 'gratuito').length;
+  const kpiTrials = allCourses.filter(c => c.plan_tipo === 'trial').length;
+  const kpiIngresos = allCourses.filter(c => c.plan_tipo === 'activo').reduce((sum, c) => sum + (c.plan_valor_mensual || 0), 0);
+  const kpiProblemas = allCourses.filter(c => c.plan_tipo === 'suspendido' || c.plan_tipo === 'cancelado').length;
 
   return (
     <div className="super-admin-dashboard">
@@ -361,7 +377,7 @@ export default function SuperAdminDashboard() {
 
               <div className="school-grid">
                 {schools.map(school => {
-                  const planCfg = getPlanConfig(school.plan_tipo);
+                  const schoolCourseCount = allCourses.filter(c => c.colegio_id === school.id).length;
                   return (
                     <div 
                       key={school.id} 
@@ -376,19 +392,9 @@ export default function SuperAdminDashboard() {
                       <GraduationCap className="school-icon" weight="fill" />
                       <div className="school-name">{school.nombre}</div>
                       <span style={{
-                        display: 'inline-block',
-                        fontSize: '10px',
-                        fontWeight: '800',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        backgroundColor: planCfg.bg,
-                        color: planCfg.color,
-                        border: `1px solid ${planCfg.border}`,
-                        marginTop: '6px'
+                        fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px'
                       }}>
-                        {planCfg.icon} {planCfg.label}
+                        {schoolCourseCount} {schoolCourseCount === 1 ? 'curso' : 'cursos'}
                       </span>
                       <button 
                         onClick={(e) => handleDeleteSchool(school.id, e)}
@@ -456,77 +462,98 @@ export default function SuperAdminDashboard() {
                       <thead>
                         <tr>
                           <th>Curso</th>
+                          <th style={{ textAlign: 'center' }}>Plan</th>
                           <th>Administrador (Apoderado)</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {courses.map(course => (
-                          <tr key={course.id}>
-                            <td style={{ fontWeight: '700' }}>{course.nombre}</td>
-                            <td>
-                              {editingCourseId === course.id ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <input 
-                                    type="email" 
-                                    className="form-input" 
-                                    style={{ padding: '6px 12px', fontSize: '13px', maxWidth: '240px', margin: 0 }}
-                                    value={editingEmail}
-                                    onChange={(e) => setEditingEmail(e.target.value)}
-                                    placeholder="apoderado@gmail.com"
-                                  />
-                                  <button 
-                                    onClick={() => handleUpdateAdminEmail(course.id, editingEmail)}
-                                    style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                                    title="Guardar"
-                                  >
-                                    <Check size={18} weight="bold" />
-                                  </button>
-                                  <button 
-                                    onClick={() => setEditingCourseId(null)}
-                                    style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                                    title="Cancelar"
-                                  >
-                                    <X size={18} weight="bold" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        {courses.map(course => {
+                          const planCfg = getPlanConfig(course.plan_tipo);
+                          return (
+                            <tr key={course.id}>
+                              <td style={{ fontWeight: '700' }}>{course.nombre}</td>
+                              <td style={{ textAlign: 'center' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  fontSize: '10px',
+                                  fontWeight: '800',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  padding: '3px 8px',
+                                  borderRadius: '4px',
+                                  backgroundColor: planCfg.bg,
+                                  color: planCfg.color,
+                                  border: `1px solid ${planCfg.border}`,
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {planCfg.icon} {planCfg.label}
+                                </span>
+                              </td>
+                              <td>
+                                {editingCourseId === course.id ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    {course.admin_email ? (
-                                      <>
-                                        <span className="tag tag-success">Asignado</span>
-                                        <span style={{ fontSize: '14px', fontFamily: 'var(--font-mono)' }}>{course.admin_email}</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span className="tag tag-warning">Sin Administrador</span>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Falta registrar Gmail</span>
-                                      </>
-                                    )}
-                                  </div>
-                                  <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                                    <input 
+                                      type="email" 
+                                      className="form-input" 
+                                      style={{ padding: '6px 12px', fontSize: '13px', maxWidth: '240px', margin: 0 }}
+                                      value={editingEmail}
+                                      onChange={(e) => setEditingEmail(e.target.value)}
+                                      placeholder="apoderado@gmail.com"
+                                    />
                                     <button 
-                                      onClick={() => { setEditingCourseId(course.id); setEditingEmail(course.admin_email || ''); }}
-                                      style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                                      title="Editar Administrador"
+                                      onClick={() => handleUpdateAdminEmail(course.id, editingEmail)}
+                                      style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                      title="Guardar"
                                     >
-                                      <PencilSimple size={16} />
+                                      <Check size={18} weight="bold" />
                                     </button>
-                                    {course.admin_email && (
-                                      <button 
-                                        onClick={() => handleDeleteAdminEmail(course.id)}
-                                        style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', padding: '4px' }}
-                                        title="Eliminar Administrador"
-                                      >
-                                        <Trash size={16} />
-                                      </button>
-                                    )}
+                                    <button 
+                                      onClick={() => setEditingCourseId(null)}
+                                      style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                      title="Cancelar"
+                                    >
+                                      <X size={18} weight="bold" />
+                                    </button>
                                   </div>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      {course.admin_email ? (
+                                        <>
+                                          <span className="tag tag-success">Asignado</span>
+                                          <span style={{ fontSize: '14px', fontFamily: 'var(--font-mono)' }}>{course.admin_email}</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="tag tag-warning">Sin Admin</span>
+                                          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Falta Gmail</span>
+                                        </>
+                                      )}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', marginLeft: '12px' }}>
+                                      <button 
+                                        onClick={() => { setEditingCourseId(course.id); setEditingEmail(course.admin_email || ''); }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                        title="Editar Administrador"
+                                      >
+                                        <PencilSimple size={16} />
+                                      </button>
+                                      {course.admin_email && (
+                                        <button 
+                                          onClick={() => handleDeleteAdminEmail(course.id)}
+                                          style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                          title="Eliminar Administrador"
+                                        >
+                                          <Trash size={16} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -549,7 +576,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/* SUBSCRIPTION MANAGEMENT SECTION                       */}
+      {/* SUBSCRIPTION MANAGEMENT SECTION (PER COURSE)          */}
       {/* ═══════════════════════════════════════════════════════ */}
 
       <div style={{ marginTop: '48px' }}>
@@ -568,7 +595,7 @@ export default function SuperAdminDashboard() {
               Gestión de Suscripciones SaaS
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-              Administra planes, períodos de prueba, valores mensuales y accesos gratuitos por colegio.
+              Administra planes, períodos de prueba, valores mensuales y accesos gratuitos <strong>por curso</strong>.
             </p>
           </div>
           {showSubscriptions ? <CaretUp size={20} color="var(--text-muted)" /> : <CaretDown size={20} color="var(--text-muted)" />}
@@ -579,7 +606,7 @@ export default function SuperAdminDashboard() {
             {/* KPI Summary Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
               
-              {/* Active Schools */}
+              {/* Active Courses */}
               <div className="double-bezel-outer">
                 <div className="double-bezel-inner" style={{ padding: '20px', textAlign: 'center' }}>
                   <div style={{ 
@@ -594,7 +621,7 @@ export default function SuperAdminDashboard() {
                     {kpiActivos}
                   </div>
                   <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '6px' }}>
-                    Colegios Activos
+                    Cursos Activos
                   </div>
                 </div>
               </div>
@@ -660,24 +687,25 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
 
-            {/* Subscription Management Table */}
+            {/* Subscription Management Table (ALL courses across all schools) */}
             <div className="double-bezel-outer">
               <div className="double-bezel-inner" style={{ padding: '24px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--brand-dark)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Notepad size={20} weight="fill" color="var(--brand)" />
-                  Detalle de Planes por Colegio
+                  Detalle de Planes por Curso
                 </h3>
 
-                {schools.length === 0 ? (
+                {allCourses.length === 0 ? (
                   <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>
-                    No hay colegios registrados aún.
+                    No hay cursos registrados aún. Crea un colegio y agrega cursos para gestionar sus planes.
                   </p>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
-                    <table className="data-table" style={{ minWidth: '900px' }}>
+                    <table className="data-table" style={{ minWidth: '1000px' }}>
                       <thead>
                         <tr>
                           <th>Colegio</th>
+                          <th>Curso</th>
                           <th style={{ textAlign: 'center' }}>Estado</th>
                           <th style={{ textAlign: 'right' }}>Valor Mensual</th>
                           <th style={{ textAlign: 'center' }}>Inicio</th>
@@ -688,17 +716,18 @@ export default function SuperAdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {schools.map(school => {
-                          const planCfg = getPlanConfig(school.plan_tipo);
-                          const daysLeft = getDaysRemaining(school.plan_fecha_vencimiento);
-                          const isEditing = editingPlanSchoolId === school.id;
+                        {allCourses.map(course => {
+                          const planCfg = getPlanConfig(course.plan_tipo);
+                          const daysLeft = getDaysRemaining(course.plan_fecha_vencimiento);
+                          const isEditing = editingPlanCourseId === course.id;
+                          const schoolName = course.colegios?.nombre || getSchoolName(course.colegio_id);
 
                           if (isEditing) {
                             return (
-                              <tr key={school.id} style={{ backgroundColor: 'var(--brand-light)' }}>
-                                <td colSpan="8" style={{ padding: '20px' }}>
+                              <tr key={course.id} style={{ backgroundColor: 'var(--brand-light)' }}>
+                                <td colSpan="9" style={{ padding: '20px' }}>
                                   <div style={{ marginBottom: '12px' }}>
-                                    <strong style={{ fontSize: '15px' }}>Editando plan de: {school.nombre}</strong>
+                                    <strong style={{ fontSize: '15px' }}>Editando plan de: {schoolName} → {course.nombre}</strong>
                                   </div>
                                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                                     {/* Plan Type */}
@@ -748,7 +777,6 @@ export default function SuperAdminDashboard() {
                                         value={editPlanForm.plan_fecha_vencimiento}
                                         onChange={(e) => setEditPlanForm({ ...editPlanForm, plan_fecha_vencimiento: e.target.value })}
                                         style={{ padding: '8px 12px', fontSize: '13px' }}
-                                        placeholder="Dejar vacío = sin límite"
                                       />
                                       <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                                         Vacío = sin vencimiento
@@ -782,7 +810,7 @@ export default function SuperAdminDashboard() {
                                     </button>
                                     <button 
                                       className="btn btn-primary" 
-                                      onClick={() => handleSavePlan(school.id)}
+                                      onClick={() => handleSavePlan(course.id)}
                                       style={{ padding: '8px 20px', fontSize: '13px' }}
                                     >
                                       <Check size={16} weight="bold" /> Guardar Cambios
@@ -794,8 +822,9 @@ export default function SuperAdminDashboard() {
                           }
 
                           return (
-                            <tr key={school.id}>
-                              <td style={{ fontWeight: '700', fontSize: '14px' }}>{school.nombre}</td>
+                            <tr key={course.id}>
+                              <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{schoolName}</td>
+                              <td style={{ fontWeight: '700', fontSize: '14px' }}>{course.nombre}</td>
                               <td style={{ textAlign: 'center' }}>
                                 <span style={{
                                   display: 'inline-block',
@@ -813,14 +842,14 @@ export default function SuperAdminDashboard() {
                                   {planCfg.icon} {planCfg.label}
                                 </span>
                               </td>
-                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: '700', fontSize: '14px', color: school.plan_tipo === 'activo' ? '#3b82f6' : 'var(--text-muted)' }}>
-                                {school.plan_tipo === 'activo' ? formatCurrency(school.plan_valor_mensual) : '—'}
+                              <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: '700', fontSize: '14px', color: course.plan_tipo === 'activo' ? '#3b82f6' : 'var(--text-muted)' }}>
+                                {course.plan_tipo === 'activo' ? formatCurrency(course.plan_valor_mensual) : '—'}
                               </td>
                               <td style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)' }}>
-                                {formatDate(school.plan_fecha_inicio)}
+                                {formatDate(course.plan_fecha_inicio)}
                               </td>
                               <td style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)' }}>
-                                {school.plan_fecha_vencimiento ? formatDate(school.plan_fecha_vencimiento) : (
+                                {course.plan_fecha_vencimiento ? formatDate(course.plan_fecha_vencimiento) : (
                                   <span style={{ color: '#10b981', fontWeight: '600' }}>∞ Sin límite</span>
                                 )}
                               </td>
@@ -838,12 +867,12 @@ export default function SuperAdminDashboard() {
                                   <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
                                 )}
                               </td>
-                              <td style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {school.plan_notas || '—'}
+                              <td style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {course.plan_notas || '—'}
                               </td>
                               <td style={{ textAlign: 'center' }}>
                                 <button 
-                                  onClick={() => startEditingPlan(school)}
+                                  onClick={() => startEditingPlan(course)}
                                   style={{ 
                                     background: 'none', border: 'none', 
                                     color: 'var(--brand)', cursor: 'pointer', 
