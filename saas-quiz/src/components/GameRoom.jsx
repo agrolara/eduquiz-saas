@@ -241,7 +241,12 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     if (session?.estado !== 'esperando') return;
     
     // Establishing turn order
-    const turnOrder = activePlayers.map(p => p.id);
+    let turnOrder = activePlayers.map(p => p.id);
+    if (turnOrder.length === 0) {
+      // Fallback to all registered players in the course
+      turnOrder = players.map(p => p.id);
+    }
+    
     if (turnOrder.length === 0) return; // Wait for players list
     
     if (demoMode) {
@@ -392,6 +397,53 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       autoGradeNonResponders();
     }
   }, [session?.estado, isMyTurn, question?.id]);
+
+  // Self-healing: Dynamically enroll late-joining students and fix null turn orders
+  useEffect(() => {
+    if (demoMode || !session || !profile || profile.rol !== 'jugador' || session.estado === 'esperando' || session.estado === 'finalizado') {
+      return;
+    }
+
+    const enrollSelf = async () => {
+      const currentTurns = session.orden_turnos || [];
+      const isAlreadyInTurns = currentTurns.includes(profile.id);
+      const isTurnoNull = !session.turno_actual_usuario_id;
+
+      if (!isAlreadyInTurns || isTurnoNull) {
+        let newTurns = [...currentTurns];
+        if (!isAlreadyInTurns) {
+          newTurns.push(profile.id);
+        }
+
+        const updatePayload = {
+          orden_turnos: newTurns
+        };
+
+        if (isTurnoNull && newTurns.length > 0) {
+          updatePayload.turno_actual_usuario_id = newTurns[0];
+        }
+
+        console.log("=== EduQuiz Self-Healing ===");
+        console.log("Enrolling student / healing session:", profile.nombre);
+        console.log("Payload:", updatePayload);
+
+        try {
+          const { error } = await supabase
+            .from('sesiones_juego')
+            .update(updatePayload)
+            .eq('id', sessionId);
+          
+          if (error) {
+            console.error("Error updating session turns:", error);
+          }
+        } catch (err) {
+          console.error("Crash during self-enrollment/healing:", err);
+        }
+      }
+    };
+
+    enrollSelf();
+  }, [session?.estado, session?.orden_turnos, session?.turno_actual_usuario_id, profile?.id, demoMode, sessionId]);
 
   // Demo Mode Simulation Logic
   useEffect(() => {
@@ -795,7 +847,17 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   };
 
   const handleStartGame = async () => {
-    const turnOrder = activePlayers.map(p => p.id);
+    let turnOrder = activePlayers.map(p => p.id);
+    if (turnOrder.length === 0) {
+      // Fallback to all registered players in the course
+      turnOrder = players.map(p => p.id);
+    }
+
+    if (turnOrder.length === 0) {
+      alert("No hay alumnos registrados en este curso ni conectados en la sala. Agrega alumnos al curso primero.");
+      return;
+    }
+
     if (demoMode) {
       setSession(s => ({
         ...s,
@@ -1097,12 +1159,19 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
             estado: 'finalizado'
           };
         }
-        const currentIndex = s.orden_turnos.indexOf(s.turno_actual_usuario_id);
-        const nextIndex = (currentIndex + 1) % s.orden_turnos.length;
+        let nextPlayerId = null;
+        if (s.orden_turnos && s.orden_turnos.length > 0) {
+          const currentIndex = s.orden_turnos.indexOf(s.turno_actual_usuario_id);
+          const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % s.orden_turnos.length;
+          nextPlayerId = s.orden_turnos[nextIndex];
+        }
+        if (!nextPlayerId && players.length > 0) {
+          nextPlayerId = players[0].id;
+        }
         return {
           ...s,
           estado: 'pregunta',
-          turno_actual_usuario_id: s.orden_turnos[nextIndex],
+          turno_actual_usuario_id: nextPlayerId,
           pregunta_actual_id: null
         };
       });
@@ -1248,8 +1317,16 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     try {
       const isLimitReached = roundsLimit > 0 && questionsCount >= roundsLimit;
 
-      const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
-      const nextIndex = (currentIndex + 1) % session.orden_turnos.length;
+      let nextPlayerId = null;
+      if (session.orden_turnos && session.orden_turnos.length > 0) {
+        const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % session.orden_turnos.length;
+        nextPlayerId = session.orden_turnos[nextIndex];
+      }
+
+      if (!nextPlayerId && players.length > 0) {
+        nextPlayerId = players[0].id;
+      }
 
       const updatePayload = isLimitReached 
         ? {
@@ -1258,7 +1335,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           }
         : {
             estado: 'pregunta',
-            turno_actual_usuario_id: session.orden_turnos[nextIndex],
+            turno_actual_usuario_id: nextPlayerId,
             pregunta_actual_id: null,
             temporizador_fin: null
           };
