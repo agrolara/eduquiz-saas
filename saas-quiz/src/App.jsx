@@ -372,6 +372,62 @@ function AppContent() {
     setActiveSession({ id, name });
   };
 
+  // Dynamic Medal Count Calculation for logged-in student
+  const getMedalsCount = () => {
+    const medals = { gold: 0, silver: 0, bronze: 0 };
+    if (!profile || !rankings.length) return medals;
+
+    // Group scores by session
+    const scoresBySession = {}; // { [sesion_id]: { [email]: score } }
+
+    rankings.forEach(r => {
+      if (Array.isArray(r.historial_participacion)) {
+        r.historial_participacion.forEach(h => {
+          if (!scoresBySession[h.sesion_id]) {
+            scoresBySession[h.sesion_id] = {};
+          }
+          // Use email as unique identifier for both demo and real mode
+          scoresBySession[h.sesion_id][r.email] = h.puntaje_obtenido || 0;
+        });
+      }
+    });
+
+    // Compute rank for each session
+    Object.keys(scoresBySession).forEach(sesionId => {
+      const sessionScores = scoresBySession[sesionId];
+      const participants = Object.keys(sessionScores).map(email => ({
+        email,
+        score: sessionScores[email]
+      })).sort((a, b) => b.score - a.score);
+
+      // Assign ranks (handling ties!)
+      let currentRank = 1;
+      const rankedParticipants = [];
+      participants.forEach((p, idx) => {
+        if (idx > 0 && p.score < participants[idx - 1].score) {
+          currentRank = idx + 1;
+        }
+        rankedParticipants.push({ ...p, rank: currentRank });
+      });
+
+      // Find logged-in user's rank in this session
+      const myParticipation = rankedParticipants.find(p => p.email === profile.email);
+      if (myParticipation) {
+        if (myParticipation.rank === 1) {
+          medals.gold++;
+        } else if (myParticipation.rank === 2) {
+          medals.silver++;
+        } else if (myParticipation.rank === 3) {
+          medals.bronze++;
+        }
+      }
+    });
+
+    return medals;
+  };
+
+  const medals = getMedalsCount();
+
   return (
     <div className="app-root">
       {/* Demo Mode Control Header */}
@@ -698,13 +754,6 @@ function AppContent() {
                                     <td style={{ fontWeight: '800' }}>#{index + 1}</td>
                                     <td>
                                       <span style={{ fontWeight: '700' }}>{student.nombre}</span> {isMe && <span className="tag tag-success" style={{ marginLeft: '6px', fontSize: '10px' }}>Tú</span>}
-                                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                        {student.historial_participacion && student.historial_participacion.length > 0 ? (
-                                          <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
-                                        ) : (
-                                          <span>Sin participación registrada</span>
-                                        )}
-                                      </div>
                                     </td>
                                     <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
                                     <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--brand)' }}>{student.puntaje_total} pts</td>
@@ -749,7 +798,9 @@ function AppContent() {
                             <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#b45309' }}>1er Lugar</span>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Desafíos ganados</span>
                           </div>
-                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#b45309', marginLeft: 'auto' }}>2 veces</span>
+                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#b45309', marginLeft: 'auto' }}>
+                            {medals.gold} {medals.gold === 1 ? 'vez' : 'veces'}
+                          </span>
                         </div>
 
                         {/* Plata */}
@@ -772,7 +823,9 @@ function AppContent() {
                             <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#475569' }}>2do Lugar</span>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Segundos puestos</span>
                           </div>
-                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#475569', marginLeft: 'auto' }}>1 vez</span>
+                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#475569', marginLeft: 'auto' }}>
+                            {medals.silver} {medals.silver === 1 ? 'vez' : 'veces'}
+                          </span>
                         </div>
 
                         {/* Bronce */}
@@ -795,7 +848,9 @@ function AppContent() {
                             <span style={{ fontSize: '14px', fontWeight: '800', display: 'block', color: '#c2410c' }}>3er Lugar</span>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Terceros puestos</span>
                           </div>
-                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#c2410c', marginLeft: 'auto' }}>4 veces</span>
+                          <span style={{ fontSize: '20px', fontWeight: '800', color: '#c2410c', marginLeft: 'auto' }}>
+                            {medals.bronze} {medals.bronze === 1 ? 'vez' : 'veces'}
+                          </span>
                         </div>
                       </div>
                     </div>
