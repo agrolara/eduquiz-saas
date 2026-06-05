@@ -42,6 +42,11 @@ function AppContent() {
           setSwRegistration(reg);
         })
         .catch(err => console.error('Error SW:', err));
+
+      navigator.serviceWorker.ready.then(reg => {
+        console.log('SW listo y activo:', reg);
+        setSwRegistration(reg);
+      });
         
       const handleMessage = (event) => {
         if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
@@ -94,16 +99,22 @@ function AppContent() {
     // Browser native push notification
     if (notificationPermission === 'granted') {
       if (swRegistration) {
-        swRegistration.active?.postMessage({
-          type: 'SHOW_NOTIFICATION',
-          payload: {
-            title,
-            body,
-            data: {
-              clickAction: window.location.origin,
-              sessionId,
-              sessionName
-            }
+        swRegistration.showNotification(title, {
+          body,
+          icon: '/favicon.svg',
+          badge: '/favicon.svg',
+          vibrate: [200, 100, 200],
+          data: {
+            clickAction: window.location.origin,
+            sessionId,
+            sessionName
+          }
+        }).catch(err => {
+          console.warn("SW showNotification failed, using fallback:", err);
+          try {
+            new Notification(title, { body, icon: '/favicon.svg' });
+          } catch (e) {
+            console.error("Direct Notification constructor failed:", e);
           }
         });
       } else {
@@ -509,9 +520,12 @@ function AppContent() {
                       }}>🔔</div>
                       <div style={{ textAlign: 'left' }}>
                         <h4 style={{ margin: '0 0 6px', fontWeight: '800', fontSize: '16px', color: 'var(--text-main)' }}>¿Quieres recibir avisos en tiempo real?</h4>
-                        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                        <p style={{ margin: '0 0 8px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                           Activa las notificaciones de escritorio para saber al instante cuando tu profesor inicie una nueva partida programada de 10 minutos.
                         </p>
+                        <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', lineHeight: '1.4' }}>
+                          ℹ️ Nota para móviles: En Android, asegúrate de habilitar las notificaciones de Chrome en la configuración del sistema. En iPhone (iOS), debes agregar esta página a tu pantalla de inicio ("Compartir" &gt; "Añadir a pantalla de inicio") para habilitar las alertas push.
+                        </div>
                       </div>
                     </div>
                     <button className="btn btn-primary animate-hover" onClick={requestNotificationPermission} style={{
