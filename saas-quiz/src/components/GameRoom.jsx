@@ -147,7 +147,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const currentTurnNumber = demoMode ? demoQuestionsCount : questionsCount;
 
   // Final standings / Podium players
-  const podiumPlayers = [...players]
+  const basePodiumPlayers = [...players]
     .map(p => {
       const rank = rankings.find(r => r.usuario_id === p.id);
       let points = 0;
@@ -163,6 +163,48 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       return { ...p, points };
     })
     .sort((a, b) => b.points - a.points);
+
+  const podiumPlayers = [];
+  let tempRank = 1;
+  basePodiumPlayers.forEach((p, idx) => {
+    if (idx > 0 && p.points < basePodiumPlayers[idx - 1].points) {
+      tempRank = idx + 1;
+    }
+    podiumPlayers.push({ ...p, rank: tempRank });
+  });
+
+  const getPodiumStepConfig = (player) => {
+    if (!player) return null;
+    const rank = player.rank;
+    if (rank === 1) {
+      return {
+        stepClass: 'step-1',
+        height: '140px',
+        label: '1°',
+        avatarBorder: '3px solid #fbbf24',
+        isFirst: true,
+        avatarContent: '👑'
+      };
+    } else if (rank === 2) {
+      return {
+        stepClass: 'step-2',
+        height: '100px',
+        label: '2°',
+        avatarBorder: '2px solid #cbd5e1',
+        isFirst: false,
+        avatarContent: player.nombre ? player.nombre[0] : 'U'
+      };
+    } else {
+      return {
+        stepClass: 'step-3',
+        height: '70px',
+        label: '3°',
+        avatarBorder: '2px solid #fed7aa',
+        isFirst: false,
+        avatarContent: player.nombre ? player.nombre[0] : 'U'
+      };
+    }
+  };
 
 
   // Forms
@@ -1831,46 +1873,55 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                 {/* 3D Podium Visualization */}
                 <div className="podium-container">
                   {/* 2nd Place */}
-                  {podiumPlayers[1] && (
-                    <div className="podium-step-wrapper">
-                      <div className="podium-avatar" style={{ border: '2px solid #cbd5e1' }}>
-                        {podiumPlayers[1].nombre[0]}
+                  {podiumPlayers[1] && (() => {
+                    const cfg = getPodiumStepConfig(podiumPlayers[1]);
+                    return (
+                      <div className="podium-step-wrapper">
+                        <div className="podium-avatar" style={{ border: cfg.avatarBorder, width: cfg.isFirst ? '56px' : '48px', height: cfg.isFirst ? '56px' : '48px', fontSize: cfg.isFirst ? '24px' : '16px' }}>
+                          {cfg.avatarContent}
+                        </div>
+                        <div className="podium-name" style={{ fontWeight: cfg.isFirst ? '800' : '700' }}>{podiumPlayers[1].nombre}</div>
+                        <div className="podium-points" style={{ fontWeight: cfg.isFirst ? '800' : '700', color: cfg.isFirst ? 'var(--warning)' : 'var(--text-muted)' }}>{podiumPlayers[1].points} pts</div>
+                        <div className={`podium-step ${cfg.stepClass}`} style={{ height: cfg.height }}>
+                          <span>{cfg.label}</span>
+                        </div>
                       </div>
-                      <div className="podium-name">{podiumPlayers[1].nombre}</div>
-                      <div className="podium-points">{podiumPlayers[1].points} pts</div>
-                      <div className="podium-step step-2" style={{ height: '100px' }}>
-                        <span>2°</span>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* 1st Place */}
-                  {podiumPlayers[0] && (
-                    <div className="podium-step-wrapper">
-                      <div className="podium-avatar" style={{ border: '3px solid #fbbf24', width: '56px', height: '56px', fontSize: '24px' }}>
-                        👑
+                  {podiumPlayers[0] && (() => {
+                    const cfg = getPodiumStepConfig(podiumPlayers[0]);
+                    return (
+                      <div className="podium-step-wrapper">
+                        <div className="podium-avatar" style={{ border: cfg.avatarBorder, width: cfg.isFirst ? '56px' : '48px', height: cfg.isFirst ? '56px' : '48px', fontSize: cfg.isFirst ? '24px' : '16px' }}>
+                          {cfg.avatarContent}
+                        </div>
+                        <div className="podium-name" style={{ fontWeight: cfg.isFirst ? '800' : '700' }}>{podiumPlayers[0].nombre}</div>
+                        <div className="podium-points" style={{ fontWeight: cfg.isFirst ? '800' : '700', color: cfg.isFirst ? 'var(--warning)' : 'var(--text-muted)' }}>{podiumPlayers[0].points} pts</div>
+                        <div className={`podium-step ${cfg.stepClass}`} style={{ height: cfg.height }}>
+                          <span>{cfg.label}</span>
+                        </div>
                       </div>
-                      <div className="podium-name" style={{ fontWeight: '800' }}>{podiumPlayers[0].nombre}</div>
-                      <div className="podium-points" style={{ fontWeight: '800', color: 'var(--warning)' }}>{podiumPlayers[0].points} pts</div>
-                      <div className="podium-step step-1" style={{ height: '140px' }}>
-                        <span>1°</span>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* 3rd Place */}
-                  {podiumPlayers[2] && (
-                    <div className="podium-step-wrapper">
-                      <div className="podium-avatar" style={{ border: '2px solid #fed7aa' }}>
-                        {podiumPlayers[2].nombre[0]}
+                  {podiumPlayers[2] && (() => {
+                    const cfg = getPodiumStepConfig(podiumPlayers[2]);
+                    return (
+                      <div className="podium-step-wrapper">
+                        <div className="podium-avatar" style={{ border: cfg.avatarBorder, width: cfg.isFirst ? '56px' : '48px', height: cfg.isFirst ? '56px' : '48px', fontSize: cfg.isFirst ? '24px' : '16px' }}>
+                          {cfg.avatarContent}
+                        </div>
+                        <div className="podium-name" style={{ fontWeight: cfg.isFirst ? '800' : '700' }}>{podiumPlayers[2].nombre}</div>
+                        <div className="podium-points" style={{ fontWeight: cfg.isFirst ? '800' : '700', color: cfg.isFirst ? 'var(--warning)' : 'var(--text-muted)' }}>{podiumPlayers[2].points} pts</div>
+                        <div className={`podium-step ${cfg.stepClass}`} style={{ height: cfg.height }}>
+                          <span>{cfg.label}</span>
+                        </div>
                       </div>
-                      <div className="podium-name">{podiumPlayers[2].nombre}</div>
-                      <div className="podium-points">{podiumPlayers[2].points} pts</div>
-                      <div className="podium-step step-3" style={{ height: '70px' }}>
-                        <span>3°</span>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* Scoreboard List */}
@@ -1983,11 +2034,11 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           
           <div className="leaderboard-list">
             {podiumPlayers.map((p, idx) => {
-              const podiumClass = idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : '';
+              const podiumClass = p.rank === 1 ? 'podium-1' : p.rank === 2 ? 'podium-2' : p.rank === 3 ? 'podium-3' : '';
               return (
                 <div key={p.id} className={`leaderboard-item ${podiumClass}`}>
                   <div className="leaderboard-user">
-                    <span className="leaderboard-rank">#{idx + 1}</span>
+                    <span className="leaderboard-rank">#{p.rank}</span>
                     <span style={{ fontWeight: '700', fontSize: '14px' }}>{p.nombre}</span>
                   </div>
                   <span className="leaderboard-points">{p.points} pts</span>
@@ -2031,9 +2082,11 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               <div className="celebrate-icon-ring" style={{ width: '90px', height: '90px', fontSize: '44px', background: 'linear-gradient(135deg, #fbbf24, #d97706)' }}>
                 👑
               </div>
-              <h2 className="celebrate-title" style={{ fontSize: '32px' }}>¡Tenemos un Ganador!</h2>
+              <h2 className="celebrate-title" style={{ fontSize: '32px' }}>
+                {podiumPlayers.filter(p => p.rank === 1).length > 1 ? '¡Tenemos un Empate!' : '¡Tenemos un Ganador!'}
+              </h2>
               <p className="celebrate-subtitle" style={{ marginBottom: '20px' }}>
-                El desafío ha terminado. Felicitaciones a quien lideró la sala hoy:
+                El desafío ha terminado. Felicitaciones a {podiumPlayers.filter(p => p.rank === 1).length > 1 ? 'quienes lideraron' : 'quien lideró'} la sala hoy:
               </p>
 
               {/* Winner Showcase Box */}
@@ -2046,10 +2099,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                 transform: 'scale(1.02)'
               }}>
                 <h3 style={{ fontSize: '24px', color: '#b45309', fontWeight: '800', marginBottom: '4px' }}>
-                  {podiumPlayers[0].nombre}
+                  {podiumPlayers.filter(p => p.rank === 1).map(p => p.nombre).join(' y ')}
                 </h3>
                 <span style={{ fontSize: '14px', color: '#b45309', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>
-                  {podiumPlayers[0].points} puntos totales 🏆
+                  {podiumPlayers[0].points} puntos totales {podiumPlayers.filter(p => p.rank === 1).length > 1 ? '¡Empate! 🏆' : '🏆'}
                 </span>
               </div>
 
@@ -2060,7 +2113,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {podiumPlayers.map((p, idx) => {
-                    const isWinner = idx === 0;
+                    const isWinner = p.rank === 1;
+                    const rankMedal = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : `#${p.rank}`;
                     return (
                       <div 
                         key={p.id} 
@@ -2076,7 +2130,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                         }}
                       >
                         <span style={{ fontSize: '14px' }}>
-                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`} {p.nombre}
+                          {rankMedal} {p.nombre}
                         </span>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--brand-dark)' }}>
                           {p.points} pts
