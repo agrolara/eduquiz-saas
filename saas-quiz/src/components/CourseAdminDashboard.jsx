@@ -762,13 +762,6 @@ export default function CourseAdminDashboard({ onStartSession }) {
                         <td style={{ fontWeight: '800' }}>#{index + 1}</td>
                         <td>
                           <div style={{ fontWeight: '700' }}>{student.nombre}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                            {student.historial_participacion && student.historial_participacion.length > 0 ? (
-                              <span>Partidas: {student.historial_participacion.map(h => `${h.sesion_nombre} (${h.puntaje_obtenido} pts)`).join(', ')}</span>
-                            ) : (
-                              <span>Sin participación registrada</span>
-                            )}
-                          </div>
                         </td>
                         <td style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{student.email}</td>
                         <td style={{ textAlign: 'center', fontWeight: '600' }}>{student.sesiones_jugadas || 0}</td>
