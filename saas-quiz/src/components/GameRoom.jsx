@@ -127,6 +127,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   
   // Timer Ref & State
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes = 180s
+  const [showTimeWarning, setShowTimeWarning] = useState(false);
   const timerInterval = useRef(null);
   const activeQuestionIdRef = useRef(null);
 
@@ -269,9 +270,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   }, [sessionId, demoMode, profile]);
 
   useEffect(() => {
-    // Sync Timer
-    if (session?.estado === 'respuesta' && session?.temporizador_fin) {
-      startCountdown(session.temporizador_fin);
+    // Sync Timer for active phases: pregunta (2m), respuesta (3m), evaluacion (2m)
+    const activeTimerPhases = ['pregunta', 'respuesta', 'evaluacion'];
+    if (session && activeTimerPhases.includes(session.estado) && session.temporizador_fin) {
+      startCountdown(session.temporizador_fin, session.estado);
     } else {
       clearInterval(timerInterval.current);
     }
@@ -296,7 +298,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         ...s,
         estado: 'pregunta',
         turno_actual_usuario_id: turnOrder[0],
-        orden_turnos: turnOrder
+        orden_turnos: turnOrder,
+        temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
       }));
       return;
     }
@@ -308,7 +311,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         .update({
           estado: 'pregunta',
           turno_actual_usuario_id: turnOrder[0],
-          orden_turnos: turnOrder
+          orden_turnos: turnOrder,
+          temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
         })
         .eq('id', sessionId)
         .eq('estado', 'esperando');
@@ -531,15 +535,47 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   }, [session?.estado, session?.turno_actual_usuario_id, demoMode]);
 
-  const startCountdown = (endTimeString) => {
+  const playWarningSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz beep
+      
+      gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.4);
+    } catch (e) {
+      console.warn("Could not play alarm sound:", e);
+    }
+  };
+
+  const startCountdown = (endTimeString, currentPhase) => {
     clearInterval(timerInterval.current);
     if (demoMode) {
-      // In demo mode, count down from 180s normally
+      let initialTime = 180;
+      if (currentPhase === 'pregunta' || currentPhase === 'evaluacion') {
+        initialTime = 120;
+      }
+      setTimeLeft(initialTime);
       timerInterval.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timerInterval.current);
-            setSession(s => ({ ...s, estado: 'evaluacion' }));
+            if (currentPhase === 'respuesta') {
+              setSession(s => ({
+                ...s,
+                estado: 'evaluacion',
+                temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
+              }));
+            }
             return 0;
           }
           return prev - 1;
@@ -559,13 +595,18 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         clearInterval(timerInterval.current);
         setTimeLeft(0);
         
-        // Switch session state to evaluation once time expires.
-        // Allow any active client to perform this single-shot update safely.
-        supabase
-          .from('sesiones_juego')
-          .update({ estado: 'evaluacion' })
-          .eq('id', sessionId)
-          .eq('estado', 'respuesta');
+        if (currentPhase === 'respuesta') {
+          // Switch session state to evaluation once time expires.
+          // Allow any active client to perform this single-shot update safely.
+          supabase
+            .from('sesiones_juego')
+            .update({
+              estado: 'evaluacion',
+              temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
+            })
+            .eq('id', sessionId)
+            .eq('estado', 'respuesta');
+        }
       } else {
         setTimeLeft(left);
       }
@@ -574,6 +615,25 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     tick(); // Run immediately on start
     timerInterval.current = setInterval(tick, 1000);
   };
+
+  useEffect(() => {
+    let interval = null;
+    const isActivePhase = session?.estado === 'pregunta' || session?.estado === 'evaluacion';
+    
+    if (timeLeft === 0 && isMyTurn && isActivePhase && session?.estado !== 'terminado' && session?.estado !== 'finalizado') {
+      setShowTimeWarning(true);
+      playWarningSound();
+      interval = setInterval(() => {
+        playWarningSound();
+      }, 4000);
+    } else {
+      setShowTimeWarning(false);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timeLeft, isMyTurn, session?.estado]);
 
   const handleFileUpload = async (file, path) => {
     if (!file) return null;
@@ -651,7 +711,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     }
 
     // Set initial timer timeLeft if session is in progress
-    if (sess.estado === 'respuesta' && sess.temporizador_fin) {
+    if (['pregunta', 'respuesta', 'evaluacion'].includes(sess.estado) && sess.temporizador_fin) {
       const endTime = new Date(sess.temporizador_fin).getTime();
       const now = Date.now();
       const left = Math.floor((endTime - now) / 1000);
@@ -679,7 +739,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         if (payload.new.pregunta_actual_id) {
           fetchQuestion(payload.new.pregunta_actual_id);
         }
-        if (payload.new.estado === 'respuesta' && payload.new.temporizador_fin) {
+        if (['pregunta', 'respuesta', 'evaluacion'].includes(payload.new.estado) && payload.new.temporizador_fin) {
           const endTime = new Date(payload.new.temporizador_fin).getTime();
           const now = Date.now();
           const left = Math.floor((endTime - now) / 1000);
@@ -905,7 +965,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         ...s,
         estado: 'pregunta',
         turno_actual_usuario_id: turnOrder[0],
-        orden_turnos: turnOrder
+        orden_turnos: turnOrder,
+        temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
       }));
       return;
     }
@@ -915,7 +976,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       .update({
         estado: 'pregunta',
         turno_actual_usuario_id: turnOrder[0],
-        orden_turnos: turnOrder
+        orden_turnos: turnOrder,
+        temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
       })
       .eq('id', sessionId);
     if (error) alert("Error al iniciar partida: " + error.message);
@@ -1214,7 +1276,8 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           ...s,
           estado: 'pregunta',
           turno_actual_usuario_id: nextPlayerId,
-          pregunta_actual_id: null
+          pregunta_actual_id: null,
+          temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
         };
       });
       if (isLimitReached) {
@@ -1379,7 +1442,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
             estado: 'pregunta',
             turno_actual_usuario_id: nextPlayerId,
             pregunta_actual_id: null,
-            temporizador_fin: null
+            temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
           };
 
       const { error: sErr } = await supabase
@@ -1425,6 +1488,36 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
   return (
     <div className="game-arena-wrapper">
+      {showTimeWarning && (
+        <div className="time-warning-banner" style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#ef4444',
+          color: 'white',
+          padding: '16px 24px',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontWeight: '800',
+          fontFamily: 'var(--font-display)',
+          animation: 'pulse-warn 2s infinite',
+          border: '2px solid #fee2e2'
+        }}>
+          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <span>¡TIEMPO EXCEDIDO! Por favor realiza tu acción de inmediato.</span>
+          <style>{`
+            @keyframes pulse-warn {
+              0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+              50% { transform: translate(-50%, 0) scale(1.05); opacity: 0.95; }
+            }
+          `}</style>
+        </div>
+      )}
       <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <span className="tag tag-success" style={{ marginBottom: '8px' }}>
@@ -1566,8 +1659,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
           {/* QUESTION PHASE */}
           {session.estado === 'pregunta' && (
-            <div className="double-bezel-outer">
-              <div className="double-bezel-inner">
+            <div className="double-bezel-outer" style={{ position: 'relative' }}>
+              {/* Synchronous 2-minute timer bubble */}
+              <div className="timer-bubble">
+                <Clock weight="fill" />
+                {formatTime(timeLeft)}
+              </div>
+              <div className="double-bezel-inner" style={{ paddingTop: '40px' }}>
                 <h2 className="stage-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>Fase de Pregunta</h2>
                 
                 {isMyTurn ? (
@@ -1770,8 +1868,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
           {/* EVALUATION PHASE */}
           {session.estado === 'evaluacion' && (
-            <div className="double-bezel-outer">
-              <div className="double-bezel-inner">
+            <div className="double-bezel-outer" style={{ position: 'relative' }}>
+              {/* Synchronous 2-minute timer bubble */}
+              <div className="timer-bubble">
+                <Clock weight="fill" />
+                {formatTime(timeLeft)}
+              </div>
+              <div className="double-bezel-inner" style={{ paddingTop: '40px' }}>
                 <h2 className="stage-title" style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>Fase de Calificación</h2>
                 <p className="stage-description">
                   La respuesta correcta esperada era: <strong style={{ color: 'var(--success)' }}>{question?.respuesta_correcta}</strong>

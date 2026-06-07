@@ -17,6 +17,13 @@ export default function CourseAdminDashboard({ onStartSession }) {
   // Rankings State
   const [rankings, setRankings] = useState([]);
 
+  // Auditing States for final sessions
+  const [selectedSessionAudit, setSelectedSessionAudit] = useState(null);
+  const [auditQuestions, setAuditQuestions] = useState([]);
+  const [selectedQuestionAudit, setSelectedQuestionAudit] = useState(null);
+  const [auditAnswers, setAuditAnswers] = useState([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
   // Mock data for Demo Mode
   const demoWhitelist = [
     { id: 'wl-1', email: 'alumno.benjamin@gmail.com' },
@@ -160,6 +167,257 @@ export default function CourseAdminDashboard({ onStartSession }) {
     }));
 
     setRankings(formatted);
+  };
+
+  const handleOpenAuditPanel = async (session) => {
+    setSelectedSessionAudit(session);
+    setLoadingAudit(true);
+    setAuditQuestions([]);
+    setSelectedQuestionAudit(null);
+    setAuditAnswers([]);
+
+    if (demoMode) {
+      // Setup demo audit data
+      const mockQuestions = [
+        {
+          id: 'q-demo-1',
+          texto: '¿Cuál es el océano más grande del mundo?',
+          respuesta_correcta: 'Océano Pacífico'
+        },
+        {
+          id: 'q-demo-2',
+          texto: '¿Cuánto es 3/4 + 1/2?',
+          respuesta_correcta: '5/4 o 1 1/4'
+        }
+      ];
+      setAuditQuestions(mockQuestions);
+      setSelectedQuestionAudit(mockQuestions[0]);
+      
+      const mockAnswers = [
+        {
+          id: 'ans-demo-1',
+          pregunta_id: 'q-demo-1',
+          alumno_id: 'rank-1',
+          nombre: 'Sofía Castro',
+          texto: 'El Pacífico',
+          calificacion: 10
+        },
+        {
+          id: 'ans-demo-2',
+          pregunta_id: 'q-demo-1',
+          alumno_id: 'rank-2',
+          nombre: 'Benjamín Díaz',
+          texto: 'Atlántico',
+          calificacion: 0
+        }
+      ];
+      setAuditAnswers(mockAnswers);
+      setLoadingAudit(false);
+      return;
+    }
+
+    try {
+      // 1. Fetch questions for the session
+      const { data: questions, error: qErr } = await supabase
+        .from('preguntas')
+        .select('*')
+        .eq('sesion_id', session.id);
+      
+      if (qErr) {
+        console.error("Error fetching questions for audit:", qErr);
+        setLoadingAudit(false);
+        return;
+      }
+
+      setAuditQuestions(questions || []);
+
+      if (questions && questions.length > 0) {
+        const firstQ = questions[0];
+        setSelectedQuestionAudit(firstQ);
+        await fetchAuditAnswers(firstQ.id);
+      }
+    } catch (err) {
+      console.error("Crash loading audit data:", err);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  const fetchAuditAnswers = async (questionId) => {
+    setLoadingAudit(true);
+    try {
+      const { data: answers, error: aErr } = await supabase
+        .from('respuestas')
+        .select('*')
+        .eq('pregunta_id', questionId);
+
+      if (aErr) {
+        console.error("Error fetching answers for audit question:", aErr);
+        return;
+      }
+
+      // Fetch profile details for mapping names
+      const { data: profiles, error: pErr } = await supabase
+        .from('perfiles_usuarios')
+        .select('id, nombre, email')
+        .eq('curso_id', profile.curso_id);
+
+      const profileMap = {};
+      profiles?.forEach(p => {
+        profileMap[p.id] = p;
+      });
+
+      const mapped = (answers || []).map(ans => ({
+        id: ans.id,
+        pregunta_id: ans.pregunta_id,
+        alumno_id: ans.alumno_id,
+        nombre: profileMap[ans.alumno_id]?.nombre || profileMap[ans.alumno_id]?.email || 'Estudiante',
+        texto: ans.texto,
+        url_imagen: ans.url_imagen,
+        calificacion: ans.calificacion
+      }));
+
+      setAuditAnswers(mapped);
+    } catch (err) {
+      console.error("Crash fetching audit answers:", err);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  const handleCorrectGrade = async (answer, newGrade) => {
+    const previousGrade = typeof answer.calificacion === 'number' ? answer.calificacion : 0;
+    const difference = newGrade - previousGrade;
+
+    if (demoMode) {
+      // Update local answers state
+      setAuditAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, calificacion: newGrade } : a));
+
+      // Update local rankings state
+      setRankings(prev => prev.map(r => {
+        const matches = r.nombre === answer.nombre || r.email === answer.email || r.id === answer.alumno_id;
+        if (matches) {
+          let historial = Array.isArray(r.historial_participacion) ? [...r.historial_participacion] : [];
+          const sessionIndex = historial.findIndex(h => h.sesion_id === selectedSessionAudit.id || h.sesion_id === 's-demo-1');
+          
+          if (sessionIndex !== -1) {
+            historial[sessionIndex] = {
+              ...historial[sessionIndex],
+              puntaje_obtenido: (historial[sessionIndex].puntaje_obtenido || 0) + difference
+            };
+          } else {
+            historial.push({
+              sesion_id: selectedSessionAudit.id,
+              sesion_nombre: selectedSessionAudit.nombre,
+              fecha: new Date().toISOString().split('T')[0],
+              puntaje_obtenido: newGrade
+            });
+          }
+
+          return {
+            ...r,
+            puntaje_total: r.puntaje_total + difference,
+            historial_participacion: historial
+          };
+        }
+        return r;
+      }));
+      return;
+    }
+
+    try {
+      // 1. Update the answer grade in Supabase
+      const { error: aErr } = await supabase
+        .from('respuestas')
+        .update({ calificacion: newGrade })
+        .eq('id', answer.id);
+
+      if (aErr) {
+        alert("Error al actualizar la calificación: " + aErr.message);
+        return;
+      }
+
+      // 2. Fetch the current ranking for the student to update scores & participation history
+      const { data: rank, error: rErr } = await supabase
+        .from('rankings')
+        .select('*')
+        .eq('curso_id', profile.curso_id)
+        .eq('usuario_id', answer.alumno_id)
+        .single();
+
+      if (rErr) {
+        console.error("Error fetching student ranking row:", rErr);
+        // Fallback: if ranking row doesn't exist, create it
+        const newHistorialEntry = {
+          sesion_id: selectedSessionAudit.id,
+          sesion_nombre: selectedSessionAudit.nombre,
+          fecha: new Date().toISOString().split('T')[0],
+          puntaje_obtenido: newGrade
+        };
+        const { error: insErr } = await supabase
+          .from('rankings')
+          .insert([{
+            curso_id: profile.curso_id,
+            usuario_id: answer.alumno_id,
+            puntaje_total: newGrade,
+            sesiones_jugadas: 1,
+            historial_participacion: [newHistorialEntry]
+          }]);
+        
+        if (insErr) {
+          console.error("Error inserting ranking fallback:", insErr);
+        }
+      } else if (rank) {
+        // Recalculate puntaje_total and historial_participacion
+        const newPuntajeTotal = rank.puntaje_total + difference;
+        let historial = Array.isArray(rank.historial_participacion) ? [...rank.historial_participacion] : [];
+        const sessionIndex = historial.findIndex(h => h.sesion_id === selectedSessionAudit.id);
+
+        if (sessionIndex !== -1) {
+          historial[sessionIndex] = {
+            ...historial[sessionIndex],
+            puntaje_obtenido: (historial[sessionIndex].puntaje_obtenido || 0) + difference
+          };
+        } else {
+          historial.push({
+            sesion_id: selectedSessionAudit.id,
+            sesion_nombre: selectedSessionAudit.nombre,
+            fecha: new Date().toISOString().split('T')[0],
+            puntaje_obtenido: newGrade
+          });
+        }
+
+        const updatePayload = {
+          puntaje_total: newPuntajeTotal,
+          historial_participacion: historial
+        };
+
+        const { error: upErr } = await supabase
+          .from('rankings')
+          .update(updatePayload)
+          .eq('id', rank.id);
+
+        if (upErr) {
+          if (upErr.code === '42703') {
+            await supabase
+              .from('rankings')
+              .update({ puntaje_total: newPuntajeTotal })
+              .eq('id', rank.id);
+          } else {
+            console.error("Error updating ranking:", upErr);
+          }
+        }
+      }
+
+      // Update local audit answers state
+      setAuditAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, calificacion: newGrade } : a));
+
+      // Refresh rankings in the dashboard
+      await fetchRankings();
+    } catch (err) {
+      console.error("Crash during grade correction:", err);
+      alert("Error inesperado al corregir calificación: " + err.message);
+    }
   };
 
   const handleAddWhitelist = async (e) => {
@@ -442,7 +700,16 @@ export default function CourseAdminDashboard({ onStartSession }) {
                     
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       {session.estado === 'finalizado' ? (
-                        <span className="tag tag-success">Terminado</span>
+                        <>
+                          <span className="tag tag-success">Terminado</span>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '8px 14px', fontSize: '13px' }}
+                            onClick={() => handleOpenAuditPanel(session)}
+                          >
+                            Ver Detalles
+                          </button>
+                        </>
                       ) : (
                         <>
                           <span className="tag tag-warning">Esperando alumnos</span>
@@ -516,6 +783,284 @@ export default function CourseAdminDashboard({ onStartSession }) {
         </div>
 
       </div>
+
+      {/* AUDIT / CORRECTION MODAL */}
+      {selectedSessionAudit && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 10000,
+          padding: '20px'
+        }}>
+          <div className="double-bezel-outer" style={{
+            width: '100%',
+            maxWidth: '900px',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--bg-card)',
+            overflow: 'hidden'
+          }}>
+            <div className="double-bezel-inner" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: 'calc(90vh - 8px)',
+              padding: '24px'
+            }}>
+              
+              {/* Header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid var(--border-light)',
+                paddingBottom: '16px',
+                marginBottom: '20px'
+              }}>
+                <div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)' }}>
+                    Auditoría de Calificaciones
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                    Sesión: <strong>{selectedSessionAudit.nombre}</strong>
+                  </p>
+                </div>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '8px 16px', fontSize: '13px' }}
+                  onClick={() => setSelectedSessionAudit(null)}
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              {/* Main Content Split: Questions selector (Left) & Question Details / Student Answers (Right) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '250px 1fr',
+                gap: '24px',
+                flex: 1,
+                overflow: 'hidden'
+              }}>
+                
+                {/* Left Panel: Questions List */}
+                <div style={{
+                  borderRight: '1px solid var(--border-light)',
+                  paddingRight: '16px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    Preguntas Formuladas
+                  </h4>
+                  {auditQuestions.length === 0 ? (
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      No hay preguntas en esta sesión.
+                    </div>
+                  ) : (
+                    auditQuestions.map((q, idx) => {
+                      const isSelected = selectedQuestionAudit?.id === q.id;
+                      return (
+                        <button
+                          key={q.id}
+                          onClick={() => {
+                            setSelectedQuestionAudit(q);
+                            fetchAuditAnswers(q.id);
+                          }}
+                          style={{
+                            textAlign: 'left',
+                            padding: '12px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: isSelected ? '2px solid var(--brand)' : '1px solid var(--border-light)',
+                            backgroundColor: isSelected ? 'var(--brand-light)' : 'transparent',
+                            color: isSelected ? 'var(--brand-dark)' : 'var(--text-main)',
+                            fontWeight: isSelected ? '700' : '500',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            transition: 'var(--transition-fast)'
+                          }}
+                        >
+                          Pregunta #{idx + 1}: {q.texto.substring(0, 30)}{q.texto.length > 30 ? '...' : ''}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Right Panel: Selected Question details and grading */}
+                <div style={{
+                  overflowY: 'auto',
+                  paddingRight: '4px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px'
+                }}>
+                  {selectedQuestionAudit ? (
+                    <>
+                      {/* Question Text */}
+                      <div style={{
+                        padding: '16px',
+                        backgroundColor: 'var(--bg-page)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-light)'
+                      }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--brand)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                          Texto de la Pregunta
+                        </span>
+                        <h4 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '12px' }}>
+                          {selectedQuestionAudit.texto}
+                        </h4>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--success)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
+                          Respuesta Correcta Esperada
+                        </span>
+                        <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>
+                          {selectedQuestionAudit.respuesta_correcta}
+                        </p>
+                      </div>
+
+                      {/* Student Answers List */}
+                      <div>
+                        <h4 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                          Respuestas de los Alumnos
+                        </h4>
+                        
+                        {loadingAudit ? (
+                          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+                            Cargando respuestas...
+                          </div>
+                        ) : auditAnswers.length === 0 ? (
+                          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontStyle: 'italic' }}>
+                            Nadie respondió a esta pregunta.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {auditAnswers.map(ans => (
+                              <div key={ans.id} style={{
+                                padding: '16px',
+                                border: '1px solid var(--border-light)',
+                                borderRadius: 'var(--radius-md)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px',
+                                backgroundColor: '#fff'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                  <div>
+                                    <div style={{ fontWeight: '800', fontSize: '14px', color: 'var(--text-main)' }}>
+                                      {ans.nombre}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                      {ans.email}
+                                    </div>
+                                  </div>
+                                  <span className={`tag ${ans.calificacion === 10 ? 'tag-success' : ans.calificacion === 5 ? 'tag-warning' : 'tag-danger'}`} style={{ textTransform: 'none' }}>
+                                    Puntaje: {ans.calificacion !== null ? `${ans.calificacion} pt` : 'Sin calificar'}
+                                  </span>
+                                </div>
+
+                                <div style={{
+                                  fontSize: '15px',
+                                  fontWeight: '700',
+                                  color: 'var(--text-main)',
+                                  padding: '8px 12px',
+                                  backgroundColor: 'var(--bg-page)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  borderLeft: '4px solid var(--border-focus)'
+                                }}>
+                                  "{ans.texto}"
+                                </div>
+
+                                {ans.url_imagen && (
+                                  <div style={{ marginTop: '4px' }}>
+                                    <a href={ans.url_imagen} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', fontWeight: '700', color: 'var(--brand)', textDecoration: 'underline' }}>
+                                      Ver archivo adjunto
+                                    </a>
+                                  </div>
+                                )}
+
+                                {/* Action Buttons to Re-grade */}
+                                <div style={{
+                                  display: 'flex',
+                                  gap: '8px',
+                                  marginTop: '4px',
+                                  borderTop: '1px solid var(--border-light)',
+                                  paddingTop: '12px'
+                                }}>
+                                  <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', marginRight: '8px' }}>
+                                    Corregir:
+                                  </span>
+                                  <button
+                                    onClick={() => handleCorrectGrade(ans, 0)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      fontSize: '12px',
+                                      borderRadius: 'var(--radius-sm)',
+                                      border: ans.calificacion === 0 ? '1px solid var(--danger)' : '1px solid var(--border-light)',
+                                      backgroundColor: ans.calificacion === 0 ? 'var(--danger-bg)' : 'transparent',
+                                      color: ans.calificacion === 0 ? 'var(--danger)' : 'var(--text-muted)',
+                                      fontWeight: '700',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Mala (0 pt)
+                                  </button>
+                                  <button
+                                    onClick={() => handleCorrectGrade(ans, 5)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      fontSize: '12px',
+                                      borderRadius: 'var(--radius-sm)',
+                                      border: ans.calificacion === 5 ? '1px solid var(--warning)' : '1px solid var(--border-light)',
+                                      backgroundColor: ans.calificacion === 5 ? 'var(--warning-bg)' : 'transparent',
+                                      color: ans.calificacion === 5 ? 'var(--warning)' : 'var(--text-muted)',
+                                      fontWeight: '700',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Regular (5 pt)
+                                  </button>
+                                  <button
+                                    onClick={() => handleCorrectGrade(ans, 10)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      fontSize: '12px',
+                                      borderRadius: 'var(--radius-sm)',
+                                      border: ans.calificacion === 10 ? '1px solid var(--success)' : '1px solid var(--border-light)',
+                                      backgroundColor: ans.calificacion === 10 ? 'var(--success-bg)' : 'transparent',
+                                      color: ans.calificacion === 10 ? 'var(--success)' : 'var(--text-muted)',
+                                      fontWeight: '700',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Buena (10 pt)
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Selecciona una pregunta para ver las respuestas de los alumnos.
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
