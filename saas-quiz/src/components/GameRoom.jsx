@@ -6,11 +6,14 @@ import {
 } from '@phosphor-icons/react';
 
 const getSessionNameAndLimit = (sess) => {
-  if (!sess) return { name: '', limit: -1 };
+  if (!sess) return { name: '', limit: -1, modo: 'co_creacion' };
   const parts = sess.nombre.split('|limit:');
   const name = parts[0];
-  const limit = parts[1] ? parseInt(parts[1], 10) : -1;
-  return { name, limit };
+  const rest = parts[1] || '';
+  const modeParts = rest.split('|modo:');
+  const limit = modeParts[0] ? parseInt(modeParts[0], 10) : -1;
+  const modo = modeParts[1] || 'co_creacion';
+  return { name, limit, modo };
 };
 
 export default function GameRoom({ sessionId, sessionName, onLeave }) {
