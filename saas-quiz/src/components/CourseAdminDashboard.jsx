@@ -468,6 +468,10 @@ export default function CourseAdminDashboard({ onStartSession }) {
     const generatedCode = `${cleanName}-${day}${month}${year}`;
 
     if (demoMode) {
+      let updatedSessions = [...sessions];
+      if (updatedSessions.length >= 10) {
+        updatedSessions = updatedSessions.slice(0, 9); // Keep top 9
+      }
       const newSession = {
         id: `sess-${Date.now()}`,
         nombre: newSessionName,
@@ -475,10 +479,31 @@ export default function CourseAdminDashboard({ onStartSession }) {
         estado: 'esperando',
         creado_en: new Date().toISOString().split('T')[0]
       };
-      setSessions([newSession, ...sessions]);
+      setSessions([newSession, ...updatedSessions]);
       setNewSessionName('');
       onStartSession(newSession.id, newSession.nombre);
       return;
+    }
+
+    try {
+      // Query current sessions from DB to see if we exceed the limit of 10
+      const { data: dbSessions } = await supabase
+        .from('sesiones_juego')
+        .select('id')
+        .eq('curso_id', profile.curso_id)
+        .order('creado_en', { ascending: false });
+      
+      if (dbSessions && dbSessions.length >= 10) {
+        const sessionsToPurge = dbSessions.slice(9); // Keep the 9 newest, purge the rest
+        const purgeIds = sessionsToPurge.map(s => s.id);
+        
+        await supabase
+          .from('sesiones_juego')
+          .delete()
+          .in('id', purgeIds);
+      }
+    } catch (purgeErr) {
+      console.error("Error purging old sessions:", purgeErr);
     }
 
     const { data, error } = await supabase
@@ -494,9 +519,9 @@ export default function CourseAdminDashboard({ onStartSession }) {
     if (error) {
       alert("Error al iniciar sesión: " + error.message);
     } else {
-      setSessions([data[0], ...sessions]);
       setNewSessionName('');
       onStartSession(data[0].id, data[0].nombre);
+      await fetchSessions(); // Re-fetch to sync database state including purges
     }
   };
 
