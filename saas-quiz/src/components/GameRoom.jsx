@@ -144,7 +144,10 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   }, [question?.id]);
 
   // Deserialized session details & progress
-  const { name: cleanSessionName, limit: roundsLimit } = getSessionNameAndLimit(session);
+  const { name: cleanSessionName, limit: roundsLimit, modo: gameMode } = getSessionNameAndLimit(session);
+  const totalTurnsRequired = roundsLimit > 0
+    ? (gameMode === 'docente' ? roundsLimit : roundsLimit * (session?.orden_turnos?.length || 1))
+    : -1;
   const currentTurnNumber = demoMode ? demoQuestionsCount : questionsCount;
 
   // Final standings / Podium players
@@ -1288,7 +1291,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
         }));
       }
 
-      const isLimitReached = roundsLimit > 0 && demoQuestionsCount >= roundsLimit;
+      const isLimitReached = roundsLimit > 0 && demoQuestionsCount >= totalTurnsRequired;
       setSession(s => {
         if (isLimitReached) {
           return {
@@ -1453,7 +1456,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
 
     // ALWAYS rotate turns regardless of grading success
     try {
-      const isLimitReached = roundsLimit > 0 && questionsCount >= roundsLimit;
+      const isLimitReached = roundsLimit > 0 && questionsCount >= totalTurnsRequired;
 
       let nextPlayerId = null;
       if (session.orden_turnos && session.orden_turnos.length > 0) {
@@ -2147,13 +2150,13 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
                   <span>Progreso:</span>
-                  <span>{currentTurnNumber} {roundsLimit > 0 ? `/ ${roundsLimit}` : ''} turnos</span>
+                  <span>{currentTurnNumber} {totalTurnsRequired > 0 ? `/ ${totalTurnsRequired}` : ''} turnos</span>
                 </div>
                 <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                   <div 
                     style={{ 
                       height: '100%', 
-                      width: roundsLimit > 0 ? `${Math.min(100, (currentTurnNumber / roundsLimit) * 100)}%` : '50%', 
+                      width: totalTurnsRequired > 0 ? `${Math.min(100, (currentTurnNumber / totalTurnsRequired) * 100)}%` : '50%', 
                       backgroundColor: 'var(--brand)', 
                       borderRadius: '4px',
                       transition: 'width 0.4s ease-out'
