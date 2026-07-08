@@ -996,6 +996,33 @@ export default function LandingPage() {
                             {loading ? 'Ingresando...' : 'Entrar a Jugar'}
                           </button>
                         </div>
+
+                        {/* Box explicativa de cómo funciona el juego */}
+                        <div style={{ marginTop: '28px', padding: '18px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '12px', fontSize: '13px', lineHeight: '1.5', color: '#cbd5e1', textAlign: 'left' }}>
+                          <h4 style={{ color: '#fbbf24', margin: '0 0 10px 0', fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Fredoka, sans-serif' }}>
+                            📖 ¿Cómo se juega a EduQuiz?
+                          </h4>
+                          <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>
+                            ¡Hola! Este es un juego divertido en tiempo real donde aprenderemos en 3 fases rápidas:
+                          </p>
+                          <ul style={{ margin: '0', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '8px', color: '#cbd5e1' }}>
+                            <li>
+                              <strong>✏️ Fase 1 - Escribir Preguntas (2 min):</strong> Un compañero (o el profesor) redactará una pregunta inteligente sobre la materia de hoy.
+                            </li>
+                            <li>
+                              <strong>⚡ Fase 2 - Responder (3 min):</strong> Todos los demás tendrán tiempo para escribir sus mejores respuestas en secreto.
+                            </li>
+                            <li>
+                              <strong>⭐ Fase 3 - Calificar (2 min):</strong> Quien creó la pregunta (o el profesor) revisará y calificará las respuestas: 
+                              <span style={{ display: 'block', color: '#fbbf24', marginTop: '4px', paddingLeft: '6px', fontSize: '12px' }}>
+                                • Buena = 10 pts | • Regular = 5 pts | • Mala = 0 pts
+                              </span>
+                            </li>
+                          </ul>
+                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '14px', paddingTop: '10px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', fontWeight: '600', textAlign: 'center' }}>
+                            ¡Sé rápido y preciso para llegar al podio de campeones! 🏆
+                          </div>
+                        </div>
                       </form>
                     )}
 
