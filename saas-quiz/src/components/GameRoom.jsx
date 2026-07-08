@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { 
-  Trophy, Clock, Star, AirplaneTilt, PlayCircle
+  Trophy, Clock, Star, AirplaneTilt, PlayCircle, Copy
 } from '@phosphor-icons/react';
 
 const getSessionNameAndLimit = (sess) => {
@@ -1596,15 +1596,45 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
               Partida en vivo
             </span>
             {session.codigo && (
-              <span className="tag tag-warning" style={{
-                fontFamily: 'var(--font-mono)',
-                textTransform: 'none',
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#fef3c7',
+                border: '1.5px solid #f59e0b',
+                color: '#b45309',
+                borderRadius: '9999px',
+                padding: '6px 14px',
+                fontSize: '14px',
                 fontWeight: '800',
-                fontSize: '11px',
-                padding: '3px 8px'
+                fontFamily: 'var(--font-mono)'
               }}>
-                Código: {session.codigo}
-              </span>
+                <span>Código: <strong>{session.codigo}</strong></span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(session.codigo);
+                    alert("¡Código copiado al portapapeles!");
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#b45309',
+                    borderRadius: '4px',
+                    transition: 'background 0.2s',
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(180, 83, 9, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  title="Copiar código"
+                >
+                  <Copy size={16} weight="bold" />
+                </button>
+              </div>
             )}
           </div>
           <h1 style={{ fontSize: '28px', color: 'var(--brand-dark)' }}>{cleanSessionName}</h1>

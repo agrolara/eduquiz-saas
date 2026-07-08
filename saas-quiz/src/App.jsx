@@ -13,6 +13,7 @@ import {
 function AppContent() {
   const { user, profile, loading, signOut, demoMode, setDemoMode, selectDemoUser, hasKeys } = useAuth();
   const [activeSession, setActiveSession] = useState(null);
+  const [showInstructionsModal, setShowInstructionsModal] = useState(true);
 
   // Default Course Lobby State for Students
   const [sessionCodeInput, setSessionCodeInput] = useState('');
@@ -596,6 +597,127 @@ function AppContent() {
             {/* PLAYER (STUDENT) VIEW */}
             {profile?.rol === 'jugador' && (
               <>
+                {showInstructionsModal && (
+                  <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    padding: '20px',
+                    animation: 'fadeIn 0.3s ease-out'
+                  }}>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
+                      border: '2px solid rgba(251, 191, 36, 0.4)',
+                      borderRadius: '24px',
+                      padding: '32px',
+                      maxWidth: '550px',
+                      width: '100%',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.25)',
+                      textAlign: 'center',
+                      animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      position: 'relative',
+                      color: '#e2e8f0'
+                    }}>
+                      {/* Close button top right */}
+                      <button 
+                        onClick={() => setShowInstructionsModal(false)}
+                        style={{
+                          position: 'absolute',
+                          top: '20px',
+                          right: '20px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: 'none',
+                          color: '#94a3b8',
+                          fontSize: '20px',
+                          cursor: 'pointer',
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'background 0.2s, color 0.2s'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#94a3b8'; }}
+                      >
+                        ✕
+                      </button>
+
+                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎮</div>
+                      
+                      <h3 style={{ color: '#fbbf24', fontSize: '24px', fontWeight: '800', margin: '0 0 12px 0', fontFamily: 'Fredoka, sans-serif' }}>
+                        📖 ¿Cómo se juega a EduQuiz?
+                      </h3>
+                      
+                      <p style={{ color: '#fbbf24', fontSize: '14px', fontWeight: '700', margin: '0 0 24px 0', lineHeight: '1.5' }}>
+                        ¡Hola! Este es un juego divertido en tiempo real donde aprenderemos en 3 fases rápidas:
+                      </p>
+                      
+                      <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '20px', lineHeight: '1' }}>✏️</span>
+                          <div>
+                            <h5 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#ffffff' }}>Fase 1 - Escribir Preguntas (2 min)</h5>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', lineHeight: '1.4' }}>
+                              Un compañero (o el profesor) redactará una pregunta inteligente sobre la materia de hoy.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '20px', lineHeight: '1' }}>⚡</span>
+                          <div>
+                            <h5 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#ffffff' }}>Fase 2 - Responder (3 min)</h5>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', lineHeight: '1.4' }}>
+                              Todos los demás tendrán tiempo para escribir sus mejores respuestas en secreto.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '20px', lineHeight: '1' }}>⭐</span>
+                          <div>
+                            <h5 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: '#ffffff' }}>Fase 3 - Calificar (2 min)</h5>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', lineHeight: '1.4' }}>
+                              Quien creó la pregunta (o el profesor) revisará y calificará las respuestas:
+                              <span style={{ display: 'block', color: '#fbbf24', marginTop: '4px', fontWeight: '700' }}>
+                                • Buena = 10 pts | • Regular = 5 pts | • Mala = 0 pts
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        className="pulse-primary-btn" 
+                        onClick={() => setShowInstructionsModal(false)}
+                        style={{ width: '100%', justifyContent: 'center', padding: '14px 28px', fontSize: '16px' }}
+                      >
+                        ¡Entendido, a jugar! 🚀
+                      </button>
+
+                      <style>{`
+                        @keyframes fadeIn {
+                          from { opacity: 0; }
+                          to { opacity: 1; }
+                        }
+                        @keyframes scaleUp {
+                          from { transform: scale(0.9); opacity: 0; }
+                          to { transform: scale(1); opacity: 1; }
+                        }
+                      `}</style>
+                    </div>
+                  </div>
+                )}
                 {notificationPermission !== 'granted' && (
                   <div className="card notification-prompt-card animate-slide-in" style={{
                     background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12))',
