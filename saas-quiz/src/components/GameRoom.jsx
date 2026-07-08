@@ -219,8 +219,12 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const [myAnswerImage, setMyAnswerImage] = useState('');
 
   // Helper selectors
-  const isMyTurn = session?.turno_actual_usuario_id === profile?.id;
-  const currentDrawer = players.find(p => p.id === session?.turno_actual_usuario_id);
+  const isMyTurn = gameMode === 'docente'
+    ? (profile?.rol === 'admin_curso' || profile?.rol === 'super_admin')
+    : (session?.turno_actual_usuario_id === profile?.id);
+  const currentDrawer = gameMode === 'docente'
+    ? { nombre: 'Apoderado / Profesor' }
+    : players.find(p => p.id === session?.turno_actual_usuario_id);
 
   // Debug logs for diagnosing turn issues
   useEffect(() => {
@@ -981,9 +985,28 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       return;
     }
 
+    // 1. Seleccionar el modo de juego
+    const gameModeInput = window.prompt(
+      "Selecciona el MODO DE JUEGO:\n\n" +
+      "Escribe '1' para: Los alumnos preguntan (los alumnos redactan y se evalúan entre ellos)\n" +
+      "Escribe '2' para: El apoderado o profesor pregunta (el Profesor/Apoderado redacta todas las preguntas y califica)\n\n" +
+      "Ingresa 1 o 2 (por defecto es 1):",
+      "1"
+    );
+    
+    let modoVal = 'co_creacion';
+    if (gameModeInput === '2') {
+      modoVal = 'docente';
+    }
+
+    // 2. Seleccionar el límite de turnos
     let limitVal = -1;
     if (window.confirm("¿Deseas colocar un límite de rondas/turnos para esta partida?")) {
-      const userLimit = window.prompt("Ingresa el número de preguntas que hará cada alumno (ej: 1, 2, 3...) o presiona Cancelar para juego libre/infinito:");
+      const promptMsg = modoVal === 'docente'
+        ? "Ingresa el número TOTAL de preguntas que hará el Profesor/Apoderado (ej: 3, 5, 10...):"
+        : "Ingresa el número de preguntas que hará cada alumno (ej: 1, 2, 3...) o presiona Cancelar para juego libre/infinito:";
+      
+      const userLimit = window.prompt(promptMsg);
       if (userLimit !== null && userLimit.trim() !== '') {
         const parsed = parseInt(userLimit, 10);
         if (!isNaN(parsed) && parsed > 0) {
@@ -992,14 +1015,15 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       }
     }
 
-    const serializedName = `${cleanSessionName}|limit:${limitVal}`;
+    const serializedName = `${cleanSessionName}|limit:${limitVal}|modo:${modoVal}`;
+    const firstTurnId = modoVal === 'docente' ? profile.id : turnOrder[0];
 
     if (demoMode) {
       setSession(s => ({
         ...s,
         nombre: serializedName,
         estado: 'pregunta',
-        turno_actual_usuario_id: turnOrder[0],
+        turno_actual_usuario_id: firstTurnId,
         orden_turnos: turnOrder,
         temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
       }));
@@ -1011,7 +1035,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       .update({
         nombre: serializedName,
         estado: 'pregunta',
-        turno_actual_usuario_id: turnOrder[0],
+        turno_actual_usuario_id: firstTurnId,
         orden_turnos: turnOrder,
         temporizador_fin: new Date(Date.now() + 120 * 1000).toISOString()
       })
@@ -1300,13 +1324,17 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           };
         }
         let nextPlayerId = null;
-        if (s.orden_turnos && s.orden_turnos.length > 0) {
-          const currentIndex = s.orden_turnos.indexOf(s.turno_actual_usuario_id);
-          const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % s.orden_turnos.length;
-          nextPlayerId = s.orden_turnos[nextIndex];
-        }
-        if (!nextPlayerId && players.length > 0) {
-          nextPlayerId = players[0].id;
+        if (gameMode === 'docente') {
+          nextPlayerId = s.turno_actual_usuario_id || profile.id;
+        } else {
+          if (s.orden_turnos && s.orden_turnos.length > 0) {
+            const currentIndex = s.orden_turnos.indexOf(s.turno_actual_usuario_id);
+            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % s.orden_turnos.length;
+            nextPlayerId = s.orden_turnos[nextIndex];
+          }
+          if (!nextPlayerId && players.length > 0) {
+            nextPlayerId = players[0].id;
+          }
         }
         return {
           ...s,
@@ -1459,14 +1487,17 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       const isLimitReached = roundsLimit > 0 && questionsCount >= totalTurnsRequired;
 
       let nextPlayerId = null;
-      if (session.orden_turnos && session.orden_turnos.length > 0) {
-        const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
-        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % session.orden_turnos.length;
-        nextPlayerId = session.orden_turnos[nextIndex];
-      }
-
-      if (!nextPlayerId && players.length > 0) {
-        nextPlayerId = players[0].id;
+      if (gameMode === 'docente') {
+        nextPlayerId = session.turno_actual_usuario_id || profile.id;
+      } else {
+        if (session.orden_turnos && session.orden_turnos.length > 0) {
+          const currentIndex = session.orden_turnos.indexOf(session.turno_actual_usuario_id);
+          const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % session.orden_turnos.length;
+          nextPlayerId = session.orden_turnos[nextIndex];
+        }
+        if (!nextPlayerId && players.length > 0) {
+          nextPlayerId = players[0].id;
+        }
       }
 
       const updatePayload = isLimitReached 
@@ -2139,9 +2170,18 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                 <div style={{ marginTop: '12px', padding: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', lineHeight: '1.4', color: 'var(--text-muted)' }}>
                   <strong>💡 ¿Cómo funcionan las rondas?</strong>
                   <ul style={{ margin: '6px 0 0', paddingLeft: '16px' }}>
-                    <li style={{ marginBottom: '4px' }}><strong>Sin límite (libre)</strong>: Las preguntas continúan de forma indefinida e ilimitada.</li>
-                    <li style={{ marginBottom: '4px' }}><strong>Fijar 1</strong>: Cada alumno redactará exactamente <strong>1 pregunta</strong>.</li>
-                    <li><strong>Fijar 2 o más</strong>: Cada alumno redactará la cantidad de preguntas fijada (2, 3, etc.) antes de finalizar la partida.</li>
+                    {gameMode === 'docente' ? (
+                      <>
+                        <li style={{ marginBottom: '4px' }}><strong>Sin límite (libre)</strong>: El profesor/apoderado hace preguntas ilimitadas.</li>
+                        <li><strong>Límite X</strong>: El juego finalizará automáticamente al alcanzar las <strong>{roundsLimit} preguntas totales</strong> del profesor.</li>
+                      </>
+                    ) : (
+                      <>
+                        <li style={{ marginBottom: '4px' }}><strong>Sin límite (libre)</strong>: Las preguntas continúan de forma indefinida e ilimitada.</li>
+                        <li style={{ marginBottom: '4px' }}><strong>Fijar 1</strong>: Cada alumno redactará exactamente <strong>1 pregunta</strong>.</li>
+                        <li><strong>Fijar 2 o más</strong>: Cada alumno redactará la cantidad de preguntas fijada (2, 3, etc.) antes de finalizar la partida.</li>
+                      </>
+                    )}
                   </ul>
                 </div>
               </div>
