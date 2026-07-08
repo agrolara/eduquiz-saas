@@ -255,7 +255,16 @@ export default function LandingPage() {
       }
 
       if (signupData.user) {
-        // Update user profile to link to the course_id
+        localStorage.setItem('autoJoinSessionId', validatedSession.id);
+        localStorage.setItem('autoJoinSessionName', validatedSession.nombre);
+
+        // Explicitly sign in FIRST to establish the session (needed for RLS)
+        await supabase.auth.signInWithPassword({
+          email: virtualEmail,
+          password: virtualPassword
+        });
+
+        // NOW update the profile with curso_id and nombre (session is active, RLS allows it)
         await supabase
           .from('perfiles_usuarios')
           .update({
@@ -263,15 +272,6 @@ export default function LandingPage() {
             nombre: cleanName
           })
           .eq('id', signupData.user.id);
-        
-        localStorage.setItem('autoJoinSessionId', validatedSession.id);
-        localStorage.setItem('autoJoinSessionName', validatedSession.nombre);
-
-        // Explicitly sign in to establish the session (in case email confirmation is enabled)
-        await supabase.auth.signInWithPassword({
-          email: virtualEmail,
-          password: virtualPassword
-        });
       }
     } catch (err) {
       console.error(err);
