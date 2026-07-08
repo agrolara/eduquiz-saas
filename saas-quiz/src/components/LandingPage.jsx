@@ -159,6 +159,7 @@ export default function LandingPage() {
         password: virtualPassword,
         options: {
           data: {
+            name: `Profesor ${course.nombre}`,
             full_name: `Profesor ${course.nombre}`
           }
         }
@@ -235,6 +236,7 @@ export default function LandingPage() {
         password: virtualPassword,
         options: {
           data: {
+            name: cleanName,
             full_name: cleanName
           }
         }
