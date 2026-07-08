@@ -717,11 +717,23 @@ function AppContent() {
                           />
                           <button 
                             className="btn btn-secondary"
-                            onClick={() => {
-                              if (sessionCodeInput) {
-                                handleJoinSession(sessionCodeInput, `Partida Especial (${sessionCodeInput})`);
+                            onClick={async () => {
+                              const code = sessionCodeInput.trim();
+                              if (!code) {
+                                alert("Por favor ingresa un código de sala.");
+                                return;
+                              }
+                              
+                              const { data, error } = await supabase
+                                .from('sesiones_juego')
+                                .select('id, nombre')
+                                .eq('codigo', code)
+                                .single();
+
+                              if (error || !data) {
+                                alert("No se encontró ninguna sala con el código ingresado.");
                               } else {
-                                alert("Por favor ingresa un código válido.");
+                                handleJoinSession(data.id, data.nombre);
                               }
                             }}
                           >
