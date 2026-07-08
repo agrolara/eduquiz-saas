@@ -187,6 +187,12 @@ export default function LandingPage() {
             nombre: `Profesor ${course.nombre}`
           })
           .eq('id', signupData.user.id);
+
+        // Explicitly sign in to establish the session (in case email confirmation is enabled)
+        await supabase.auth.signInWithPassword({
+          email: virtualEmail,
+          password: virtualPassword
+        });
       }
     } catch (err) {
       console.error(err);
@@ -260,6 +266,12 @@ export default function LandingPage() {
         
         localStorage.setItem('autoJoinSessionId', validatedSession.id);
         localStorage.setItem('autoJoinSessionName', validatedSession.nombre);
+
+        // Explicitly sign in to establish the session (in case email confirmation is enabled)
+        await supabase.auth.signInWithPassword({
+          email: virtualEmail,
+          password: virtualPassword
+        });
       }
     } catch (err) {
       console.error(err);
