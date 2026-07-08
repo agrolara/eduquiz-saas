@@ -1539,6 +1539,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   
   // Find who is next to ask
   const getNextDrawerName = () => {
+    if (gameMode === 'docente') return 'Apoderado / Profesor';
     if (!session || players.length === 0) return '';
     const currentIndex = session.orden_turnos?.indexOf(session.turno_actual_usuario_id) ?? 0;
     const nextIndex = (currentIndex + 1) % (session.orden_turnos?.length || 1);
@@ -1617,27 +1618,35 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
       <div className="turn-order-container" style={{ marginBottom: '24px' }}>
         <div className="turn-title-bar">
           <span style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-muted)' }}>
-            Orden de Turnos:
+            {gameMode === 'docente' ? 'Redactor de Preguntas:' : 'Orden de Turnos:'}
           </span>
           <span className="tag tag-warning" style={{ textTransform: 'none' }}>
             🔔 Próximo a preguntar: <strong>{getNextDrawerName()}</strong>
           </span>
         </div>
         <div className="turn-list">
-          {session.orden_turnos?.map((pId, idx) => {
-            const p = players.find(pl => pl.id === pId);
-            if (!p) return null;
-            const isActive = session.turno_actual_usuario_id === pId;
-            const isNext = session.orden_turnos[(session.orden_turnos.indexOf(session.turno_actual_usuario_id) + 1) % session.orden_turnos.length] === pId;
-            
-            return (
-              <div key={pId} className={`turn-item ${isActive ? 'active' : ''} ${isNext ? 'next-up' : ''}`}>
-                <div className="turn-avatar">{idx + 1}</div>
-                <span className="turn-name">{p.nombre}</span>
-                {isActive && <Star size={14} weight="fill" color="var(--accent)" />}
-              </div>
-            );
-          })}
+          {gameMode === 'docente' ? (
+            <div className="turn-item active">
+              <div className="turn-avatar">👑</div>
+              <span className="turn-name">Apoderado / Profesor (Creador)</span>
+              <Star size={14} weight="fill" color="var(--accent)" />
+            </div>
+          ) : (
+            session.orden_turnos?.map((pId, idx) => {
+              const p = players.find(pl => pl.id === pId);
+              if (!p) return null;
+              const isActive = session.turno_actual_usuario_id === pId;
+              const isNext = session.orden_turnos[(session.orden_turnos.indexOf(session.turno_actual_usuario_id) + 1) % session.orden_turnos.length] === pId;
+              
+              return (
+                <div key={pId} className={`turn-item ${isActive ? 'active' : ''} ${isNext ? 'next-up' : ''}`}>
+                  <div className="turn-avatar">{idx + 1}</div>
+                  <span className="turn-name">{p.nombre}</span>
+                  {isActive && <Star size={14} weight="fill" color="var(--accent)" />}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
