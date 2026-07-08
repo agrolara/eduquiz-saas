@@ -13,6 +13,7 @@ export default function LandingPage() {
   // Code-based connection states
   const [inputCode, setInputCode] = useState('');
   const [studentName, setStudentName] = useState('');
+  const [courseStudents, setCourseStudents] = useState([]);
   const [courseTeacherEmail, setCourseTeacherEmail] = useState('');
   const [courseTeacherPassword, setCourseTeacherPassword] = useState('');
   const [courseTeacherName, setCourseTeacherName] = useState('');
@@ -98,7 +99,16 @@ export default function LandingPage() {
 
       if (!sErr && sess) {
         setValidatedSession(sess);
-        setSuccessMsg(`Código de Sala válido: "${sess.nombre}".`);
+        setSuccessMsg(`Código de Sala válido: "${sess.nombre}". Selecciona tu nombre para entrar.`);
+
+        // Fetch whitelist students for this course
+        const { data: students } = await supabase
+          .from('whitelist_alumnos')
+          .select('id, nombre')
+          .eq('curso_id', sess.curso_id)
+          .order('nombre', { ascending: true });
+        setCourseStudents(students || []);
+
         setLoading(false);
         return;
       }
@@ -204,14 +214,16 @@ export default function LandingPage() {
 
   const handleStudentJoin = async (e) => {
     e.preventDefault();
-    if (!studentName.trim() || !validatedSession) return;
+    if (!studentName || !validatedSession) return;
     setErrorMsg('');
     setLoading(true);
 
-    const cleanName = studentName.trim();
-    // Deterministic slug for name
-    const nameSlug = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const virtualEmail = `std_${validatedSession.id.substring(0, 8)}_${nameSlug}@virtual.eduquiz.com`;
+    // Find the selected whitelist entry to get a deterministic ID
+    const selectedEntry = courseStudents.find(s => s.id === studentName);
+    const cleanName = selectedEntry ? selectedEntry.nombre : studentName;
+    // Use whitelist entry ID for deterministic email across sessions
+    const emailKey = selectedEntry ? selectedEntry.id.substring(0, 12) : cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const virtualEmail = `std_${emailKey}@virtual.eduquiz.com`;
     const virtualPassword = `student_${validatedSession.codigo}`;
 
     if (demoMode) {
@@ -950,15 +962,25 @@ export default function LandingPage() {
                         </p>
 
                         <div className="form-group" style={{ marginBottom: '24px' }}>
-                          <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Ingresa tu Nombre y Apellido</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Ej: Ignacio Silva"
-                            value={studentName}
-                            onChange={(e) => setStudentName(e.target.value)}
-                            required
-                          />
+                          <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Selecciona tu Nombre</label>
+                          {courseStudents.length > 0 ? (
+                            <select
+                              className="form-input"
+                              value={studentName}
+                              onChange={(e) => setStudentName(e.target.value)}
+                              required
+                              style={{ cursor: 'pointer', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23a5b4fc\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center' }}
+                            >
+                              <option value="" disabled>— Elige tu nombre —</option>
+                              {courseStudents.map(s => (
+                                <option key={s.id} value={s.id}>{s.nombre}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <p style={{ color: '#f87171', fontSize: '14px', padding: '12px', background: 'rgba(248,113,113,0.1)', borderRadius: '8px' }}>
+                              No hay alumnos registrados en este curso. Pide a tu profesor que te agregue a la lista.
+                            </p>
+                          )}
                         </div>
 
                         <div style={{ display: 'flex', gap: '12px' }}>

@@ -8,7 +8,7 @@ export default function CourseAdminDashboard({ onStartSession }) {
   
   // Whitelist State
   const [whitelist, setWhitelist] = useState([]);
-  const [newStudentEmail, setNewStudentEmail] = useState('');
+  const [newStudentName, setNewStudentName] = useState('');
   
   // Sessions State
   const [sessions, setSessions] = useState([]);
@@ -26,10 +26,10 @@ export default function CourseAdminDashboard({ onStartSession }) {
 
   // Mock data for Demo Mode
   const demoWhitelist = [
-    { id: 'wl-1', email: 'alumno.benjamin@gmail.com' },
-    { id: 'wl-2', email: 'alumna.sofia@gmail.com' },
-    { id: 'wl-3', email: 'alumno.mateo@gmail.com' },
-    { id: 'wl-4', email: 'alumna.valentina@gmail.com' }
+    { id: 'wl-1', nombre: 'Benjamín Pérez' },
+    { id: 'wl-2', nombre: 'Sofía Castro' },
+    { id: 'wl-3', nombre: 'Mateo Rodríguez' },
+    { id: 'wl-4', nombre: 'Valentina Muñoz' }
   ];
 
   const demoRankings = [
@@ -422,25 +422,25 @@ export default function CourseAdminDashboard({ onStartSession }) {
 
   const handleAddWhitelist = async (e) => {
     e.preventDefault();
-    if (!newStudentEmail) return;
+    if (!newStudentName.trim()) return;
 
     if (demoMode) {
-      const newEntry = { id: `wl-${Date.now()}`, email: newStudentEmail };
+      const newEntry = { id: `wl-${Date.now()}`, nombre: newStudentName.trim() };
       setWhitelist([...whitelist, newEntry]);
-      setNewStudentEmail('');
+      setNewStudentName('');
       return;
     }
 
     const { data, error } = await supabase
       .from('whitelist_alumnos')
-      .insert([{ curso_id: profile.curso_id, email: newStudentEmail }])
+      .insert([{ curso_id: profile.curso_id, nombre: newStudentName.trim() }])
       .select();
     
     if (error) {
-      alert("Error al añadir correo a la lista: " + error.message);
+      alert("Error al añadir alumno a la lista: " + error.message);
     } else {
       setWhitelist([...whitelist, data[0]]);
-      setNewStudentEmail('');
+      setNewStudentName('');
     }
   };
 
@@ -614,20 +614,20 @@ export default function CourseAdminDashboard({ onStartSession }) {
               Alumnos Permitidos (Whitelist)
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
-              Solo los alumnos cuyos correos estén registrados aquí tendrán acceso a las salas de juego.
+              Agrega a tus alumnos por nombre y apellido. Solo los alumnos registrados aquí podrán seleccionar su nombre al entrar a las salas de juego.
             </p>
 
             <form onSubmit={handleAddWhitelist} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
               <input 
-                type="email" 
+                type="text" 
                 className="form-input" 
-                placeholder="alumno@colegio.cl"
-                value={newStudentEmail}
-                onChange={(e) => setNewStudentEmail(e.target.value)}
+                placeholder="Ej: Ignacio Silva"
+                value={newStudentName}
+                onChange={(e) => setNewStudentName(e.target.value)}
                 required
               />
               <button className="btn btn-primary" type="submit">
-                <UserPlus weight="bold" /> Invitar
+                <UserPlus weight="bold" /> Agregar
               </button>
             </form>
 
@@ -635,14 +635,14 @@ export default function CourseAdminDashboard({ onStartSession }) {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Correo Invitado</th>
+                    <th>Nombre del Alumno</th>
                     <th style={{ textAlign: 'right' }}>Acción</th>
                   </tr>
                 </thead>
                 <tbody>
                   {whitelist.map(student => (
                     <tr key={student.id}>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '14px' }}>{student.email}</td>
+                      <td style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: '600' }}>{student.nombre}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button 
                           onClick={(e) => handleDeleteWhitelist(student.id, e)}
