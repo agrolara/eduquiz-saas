@@ -460,10 +460,18 @@ export default function CourseAdminDashboard({ onStartSession }) {
     e.preventDefault();
     if (!newSessionName) return;
 
+    const d = new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const cleanName = newSessionName.replace(/[^a-zA-Z0-9]/g, '');
+    const generatedCode = `${cleanName}-${day}${month}${year}`;
+
     if (demoMode) {
       const newSession = {
         id: `sess-${Date.now()}`,
         nombre: newSessionName,
+        codigo: generatedCode,
         estado: 'esperando',
         creado_en: new Date().toISOString().split('T')[0]
       };
@@ -478,6 +486,7 @@ export default function CourseAdminDashboard({ onStartSession }) {
       .insert([{ 
         curso_id: profile.curso_id, 
         nombre: newSessionName, 
+        codigo: generatedCode,
         estado: 'esperando' 
       }])
       .select();
@@ -695,7 +704,23 @@ export default function CourseAdminDashboard({ onStartSession }) {
                   >
                     <div>
                       <h4 style={{ fontSize: '16px', fontWeight: '800' }}>{session.nombre}</h4>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Creado: {session.creado_en}</span>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Creado: {session.creado_en}</span>
+                        {session.codigo && (
+                          <span className="tag tag-success" style={{
+                            fontSize: '11px',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: '800',
+                            textTransform: 'none',
+                            backgroundColor: 'var(--brand-light)',
+                            color: 'var(--brand-dark)',
+                            border: '1px solid var(--border-focus)',
+                            padding: '1px 6px'
+                          }}>
+                            Código de Sala: {session.codigo}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

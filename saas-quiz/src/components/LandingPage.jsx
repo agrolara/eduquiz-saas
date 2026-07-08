@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabaseClient';
 import { Sparkle, GameController, ShieldCheck, Trophy, Play, EnvelopeSimple, Lock, User, WhatsappLogo } from '@phosphor-icons/react';
 
 export default function LandingPage() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, selectDemoUser } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, selectDemoUser, demoMode } = useAuth();
   
-  // Auth Form State
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  // New split layout form states
+  const [showSuperAdminForm, setShowSuperAdminForm] = useState(false);
+  const [showRoomsForm, setShowRoomsForm] = useState(false);
+
+  // Code-based connection states
+  const [inputCode, setInputCode] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [courseTeacherEmail, setCourseTeacherEmail] = useState('');
+  const [courseTeacherPassword, setCourseTeacherPassword] = useState('');
+  const [courseTeacherName, setCourseTeacherName] = useState('');
+  const [isCourseRegister, setIsCourseRegister] = useState(false);
+
+  // Validated objects
+  const [validatedCourse, setValidatedCourse] = useState(null);
+  const [validatedSession, setValidatedSession] = useState(null);
+
+  // Common authentication feedback
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -15,27 +30,242 @@ export default function LandingPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleAuthSubmit = async (e) => {
+  const handleSuperAdminSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
     setLoading(true);
 
-    if (isSignUp) {
-      const { error } = await signUpWithEmail(email, password, name);
-      if (error) {
-        setErrorMsg(error.message);
-      } else {
-        setSuccessMsg("¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.");
-        setIsSignUp(false);
-      }
-    } else {
-      const { error } = await signInWithEmail(email, password);
-      if (error) {
-        setErrorMsg(error.message);
-      }
+    if (email !== 'materiales.integrity@gmail.com' && !demoMode) {
+      setErrorMsg("Acceso exclusivo para Super Administrador. Si eres alumno o profesor, usa el Ingreso de Salas o Cursos.");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await signInWithEmail(email, password);
+    if (error) {
+      setErrorMsg(error.message);
     }
     setLoading(false);
+  };
+
+  const handleValidateCode = async (e) => {
+    e?.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    setValidatedCourse(null);
+    setValidatedSession(null);
+
+    const code = inputCode.trim();
+    if (!code) return;
+
+    if (demoMode) {
+      // Mock validation in demo mode
+      if (code.toLowerCase().includes('2026') || code.toLowerCase().includes('-')) {
+        // Course Code (hyphenated or has year)
+        setValidatedCourse({
+          id: 'demo-curso-1a',
+          nombre: 'Tercero Yellow',
+          colegio_id: 'school-1',
+          admin_email: code.toLowerCase().includes('claimed') ? 'profesora.teresa@gmail.com' : null
+        });
+        setSuccessMsg("Código de Curso validado con éxito.");
+      } else {
+        // Session Code
+        setValidatedSession({
+          id: 'demo-session-active',
+          nombre: 'Ciencias',
+          codigo: code,
+          curso_id: 'demo-curso-1a',
+          estado: 'esperando'
+        });
+        setSuccessMsg("Código de Sala válido. Escribe tu nombre para entrar a la trivia.");
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Try validating as Session Code first (students)
+      const { data: sess, error: sErr } = await supabase
+        .from('sesiones_juego')
+        .select('*, cursos(*)')
+        .eq('codigo', code)
+        .single();
+
+      if (!sErr && sess) {
+        setValidatedSession(sess);
+        setSuccessMsg(`Código de Sala válido: "${sess.nombre}".`);
+        setLoading(false);
+        return;
+      }
+
+      // Try validating as Course Code (teachers)
+      const { data: course, error: cErr } = await supabase
+        .from('cursos')
+        .select('*, colegios(*)')
+        .eq('codigo', code)
+        .single();
+
+      if (!cErr && course) {
+        setValidatedCourse(course);
+        setSuccessMsg(`Código de Curso válido. Colegio: ${course.colegios?.nombre || '—'}. Curso: ${course.nombre}.`);
+        setLoading(false);
+        return;
+      }
+
+      setErrorMsg("Código inválido. Verifica que esté bien escrito (ej: Ciencias-08072026 o ColegioPalmares-TerceroYellow-2026).");
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Error al conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStudentJoin = async (e) => {
+    e.preventDefault();
+    if (!studentName.trim() || !validatedSession) return;
+    setErrorMsg('');
+    setLoading(true);
+
+    const cleanName = studentName.trim();
+    // Deterministic slug for name
+    const nameSlug = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const virtualEmail = `std_${validatedSession.id.substring(0, 8)}_${nameSlug}@virtual.eduquiz.com`;
+    const virtualPassword = `student_${validatedSession.codigo}`;
+
+    if (demoMode) {
+      alert(`Simulación: Iniciando sesión como ${cleanName}`);
+      selectDemoUser('jugador', virtualEmail);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Attempt to sign in
+      const { data: authData, error: loginErr } = await supabase.auth.signInWithPassword({
+        email: virtualEmail,
+        password: virtualPassword
+      });
+
+      if (!loginErr && authData.user) {
+        // Save auto-join variables to redirect directly to GameRoom on reload/auth update
+        localStorage.setItem('autoJoinSessionId', validatedSession.id);
+        localStorage.setItem('autoJoinSessionName', validatedSession.nombre);
+        setLoading(false);
+        return;
+      }
+
+      // 2. If login fails, attempt to sign up
+      const { data: signupData, error: signupErr } = await supabase.auth.signUp({
+        email: virtualEmail,
+        password: virtualPassword,
+        options: {
+          data: {
+            full_name: cleanName
+          }
+        }
+      });
+
+      if (signupErr) {
+        setErrorMsg("Error al ingresar a la sesión: " + signupErr.message);
+        setLoading(false);
+        return;
+      }
+
+      if (signupData.user) {
+        // Update user profile to link to the course_id
+        await supabase
+          .from('perfiles_usuarios')
+          .update({
+            curso_id: validatedSession.curso_id,
+            nombre: cleanName
+          })
+          .eq('id', signupData.user.id);
+        
+        localStorage.setItem('autoJoinSessionId', validatedSession.id);
+        localStorage.setItem('autoJoinSessionName', validatedSession.nombre);
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Error inesperado al unirse a la sala.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTeacherAccess = async (e) => {
+    e.preventDefault();
+    if (!validatedCourse) return;
+    setErrorMsg('');
+    setLoading(true);
+
+    const isClaimed = !!validatedCourse.admin_email;
+
+    if (demoMode) {
+      alert(isClaimed ? "Simulación: Acceso Docente exitoso." : "Simulación: Registro y reclamo de curso exitoso.");
+      selectDemoUser('admin_curso');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (isClaimed) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: validatedCourse.admin_email,
+          password: courseTeacherPassword
+        });
+        if (error) {
+          setErrorMsg("Contraseña incorrecta: " + error.message);
+        }
+      } else {
+        if (!courseTeacherEmail || !courseTeacherPassword || !courseTeacherName) {
+          setErrorMsg("Por favor completa todos los campos del formulario.");
+          setLoading(false);
+          return;
+        }
+
+        const { data: signupData, error: signupErr } = await supabase.auth.signUp({
+          email: courseTeacherEmail,
+          password: courseTeacherPassword,
+          options: {
+            data: {
+              full_name: courseTeacherName
+            }
+          }
+        });
+
+        if (signupErr) {
+          setErrorMsg("Error al registrar: " + signupErr.message);
+          setLoading(false);
+          return;
+        }
+
+        if (signupData.user) {
+          // Link course admin
+          await supabase
+            .from('cursos')
+            .update({ admin_email: courseTeacherEmail })
+            .eq('id', validatedCourse.id);
+
+          // Update profile
+          await supabase
+            .from('perfiles_usuarios')
+            .update({
+              rol: 'admin_curso',
+              curso_id: validatedCourse.id,
+              nombre: courseTeacherName
+            })
+            .eq('id', signupData.user.id);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Error al conectar con la plataforma.");
+    } finally {
+      setLoading(false);
+    }
   };  return (
     <div className="premium-landing-container">
       {/* Dynamic Inject Style Tag for Playful Cosmic & High-Legibility UI */}
@@ -554,21 +784,62 @@ export default function LandingPage() {
                 Crea salas en tiempo real, fomenta el aprendizaje colaborativo con evaluación por pares y mantén a tus alumnos motivados con dinámicas gamificadas y seguras.
               </p>
               
-              <div>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
                 <button 
                   className="pulse-primary-btn"
-                  onClick={() => setShowEmailForm(!showEmailForm)}
+                  onClick={() => {
+                    setShowRoomsForm(!showRoomsForm);
+                    setShowSuperAdminForm(false);
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    setValidatedCourse(null);
+                    setValidatedSession(null);
+                    setInputCode('');
+                    setStudentName('');
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
                 >
-                  <EnvelopeSimple weight="bold" size={26} />
-                  {showEmailForm ? 'Ocultar Acceso' : 'Ingresar con Correo'}
+                  <GameController weight="bold" size={26} />
+                  {showRoomsForm ? 'Ocultar Ingreso' : 'Ingreso a Salas o Cursos'}
                 </button>
 
-                {/* Glassmorphic Auth Form */}
-                {showEmailForm && (
-                  <div className="bento-glass-card" style={{ maxWidth: '440px', marginTop: '32px', border: '3px solid #6366f1' }}>
-                    <h3 style={{ fontSize: '24px', marginBottom: '24px', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'Fredoka, sans-serif' }}>
-                      <Lock weight="bold" style={{ color: '#818cf8' }} />
-                      {isSignUp ? 'Registro de Estudiante' : 'Iniciar Sesión'}
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowSuperAdminForm(!showSuperAdminForm);
+                    setShowRoomsForm(false);
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    setEmail('');
+                    setPassword('');
+                  }}
+                  style={{
+                    padding: '14px 24px',
+                    fontSize: '15px',
+                    fontWeight: '800',
+                    borderRadius: '16px',
+                    border: '2px solid rgba(255, 255, 255, 0.15)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <ShieldCheck weight="bold" size={22} />
+                  {showSuperAdminForm ? 'Ocultar Super Admin' : 'Acceso Super Administrador'}
+                </button>
+              </div>
+
+              <div>
+                {/* Glassmorphic Super Admin Form */}
+                {showSuperAdminForm && (
+                  <div className="bento-glass-card animate-slide-in" style={{ maxWidth: '440px', marginTop: '16px', border: '3px solid #f59e0b' }}>
+                    <h3 style={{ fontSize: '22px', marginBottom: '20px', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'Fredoka, sans-serif' }}>
+                      <Lock weight="bold" style={{ color: '#f59e0b' }} />
+                      Acceso Super Administrador
                     </h3>
                     
                     {errorMsg && (
@@ -577,33 +848,13 @@ export default function LandingPage() {
                       </div>
                     )}
 
-                    {successMsg && (
-                      <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '12px 16px', borderRadius: '16px', fontSize: '14px', fontWeight: '700', marginBottom: '20px', border: '2px solid rgba(16, 185, 129, 0.3)' }}>
-                        ✓ {successMsg}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleAuthSubmit}>
-                      {isSignUp && (
-                        <div className="form-group" style={{ marginBottom: '20px' }}>
-                          <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Tu Nombre</label>
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="Ej: Benjamín Díaz"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                          />
-                        </div>
-                      )}
-
+                    <form onSubmit={handleSuperAdminSubmit}>
                       <div className="form-group" style={{ marginBottom: '20px' }}>
-                        <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Correo Electrónico</label>
+                        <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Correo del Super Administrador</label>
                         <input 
                           type="email" 
                           className="form-input" 
-                          placeholder="alumno@colegio.cl"
+                          placeholder="superadmin@eduquiz.cl"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
@@ -622,19 +873,182 @@ export default function LandingPage() {
                         />
                       </div>
 
-                      <button className="pulse-primary-btn" type="submit" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-                        {loading ? 'Procesando...' : isSignUp ? 'Registrarse' : 'Entrar al Aula'}
+                      <button className="pulse-primary-btn" type="submit" style={{ width: '100%', justifyContent: 'center', backgroundColor: '#f59e0b', borderColor: '#d97706', boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)' }} disabled={loading}>
+                        {loading ? 'Validando...' : 'Ingresar al Panel'}
                       </button>
                     </form>
+                  </div>
+                )}
 
-                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                      <button 
-                        onClick={() => { setIsSignUp(!isSignUp); setErrorMsg(''); setSuccessMsg(''); }}
-                        style={{ background: 'none', border: 'none', color: '#a5b4fc', cursor: 'pointer', fontWeight: '700', textDecoration: 'underline' }}
-                      >
-                        {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí'}
-                      </button>
-                    </div>
+                {/* Glassmorphic Rooms and Courses Code Form */}
+                {showRoomsForm && (
+                  <div className="bento-glass-card animate-slide-in" style={{ maxWidth: '440px', marginTop: '16px', border: '3px solid #6366f1' }}>
+                    
+                    {errorMsg && (
+                      <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171', padding: '12px 16px', borderRadius: '16px', fontSize: '14px', fontWeight: '700', marginBottom: '20px', border: '2px solid rgba(239, 68, 68, 0.3)' }}>
+                        ✕ {errorMsg}
+                      </div>
+                    )}
+
+                    {successMsg && (
+                      <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '12px 16px', borderRadius: '16px', fontSize: '14px', fontWeight: '700', marginBottom: '20px', border: '2px solid rgba(16, 185, 129, 0.3)' }}>
+                        ✓ {successMsg}
+                      </div>
+                    )}
+
+                    {/* Step 1: Enter Code */}
+                    {!validatedCourse && !validatedSession && (
+                      <form onSubmit={handleValidateCode}>
+                        <h3 style={{ fontSize: '22px', marginBottom: '20px', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'Fredoka, sans-serif' }}>
+                          <GameController weight="bold" style={{ color: '#818cf8' }} />
+                          Ingresar Código
+                        </h3>
+                        
+                        <div className="form-group" style={{ marginBottom: '24px' }}>
+                          <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Código de Curso o Código de Sala</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            placeholder="Ej: Ciencias-08072026"
+                            value={inputCode}
+                            onChange={(e) => setInputCode(e.target.value)}
+                            required
+                            style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', letterSpacing: '0.5px' }}
+                          />
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', display: 'block' }}>
+                            Los alumnos ingresan con el código de sala y los docentes con el código de curso.
+                          </span>
+                        </div>
+
+                        <button className="pulse-primary-btn" type="submit" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
+                          {loading ? 'Validando...' : 'Verificar Código'}
+                        </button>
+                      </form>
+                    )}
+
+                    {/* Step 2A: Validated Session (Student access) */}
+                    {validatedSession && (
+                      <form onSubmit={handleStudentJoin}>
+                        <h3 style={{ fontSize: '22px', marginBottom: '8px', fontWeight: '800', color: '#ffffff', fontFamily: 'Fredoka, sans-serif' }}>
+                          🎮 Unirse a la Sala
+                        </h3>
+                        <p style={{ color: '#a5b4fc', fontSize: '14px', marginBottom: '24px', fontWeight: '600' }}>
+                          Sala activa: <span style={{ textDecoration: 'underline' }}>{validatedSession.nombre}</span>
+                        </p>
+
+                        <div className="form-group" style={{ marginBottom: '24px' }}>
+                          <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Ingresa tu Nombre y Apellido</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            placeholder="Ej: Ignacio Silva"
+                            value={studentName}
+                            onChange={(e) => setStudentName(e.target.value)}
+                            required
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            type="button" 
+                            onClick={() => { setValidatedSession(null); setErrorMsg(''); setSuccessMsg(''); }}
+                            style={{ padding: '12px 18px', fontSize: '14px' }}
+                          >
+                            Volver
+                          </button>
+                          <button className="pulse-primary-btn" type="submit" style={{ flex: 1, justifyContent: 'center' }} disabled={loading}>
+                            {loading ? 'Ingresando...' : 'Entrar a Jugar'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    {/* Step 2B: Validated Course (Teacher access) */}
+                    {validatedCourse && (
+                      <form onSubmit={handleTeacherAccess}>
+                        <h3 style={{ fontSize: '22px', marginBottom: '8px', fontWeight: '800', color: '#ffffff', fontFamily: 'Fredoka, sans-serif' }}>
+                          🏫 Acceso Docente
+                        </h3>
+                        <p style={{ color: '#a5b4fc', fontSize: '14px', marginBottom: '24px', fontWeight: '600' }}>
+                          Curso: {validatedCourse.nombre}
+                        </p>
+
+                        {/* Case 1: Unclaimed course registration */}
+                        {!validatedCourse.admin_email ? (
+                          <>
+                            <div style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#c7d2fe', padding: '12px', borderRadius: '12px', fontSize: '13px', marginBottom: '20px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                              ℹ Este curso aún no tiene un profesor registrado. Rellena los datos para reclamarlo y crear tu acceso.
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '16px' }}>
+                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Tu Nombre completo</label>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                placeholder="Ej: Profesora Teresa"
+                                value={courseTeacherName}
+                                onChange={(e) => setCourseTeacherName(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '16px' }}>
+                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Correo electrónico docente</label>
+                              <input 
+                                type="email" 
+                                className="form-input" 
+                                placeholder="ejemplo@colegio.cl"
+                                value={courseTeacherEmail}
+                                onChange={(e) => setCourseTeacherEmail(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Crea tu contraseña</label>
+                              <input 
+                                type="password" 
+                                className="form-input" 
+                                placeholder="Mínimo 6 caracteres"
+                                value={courseTeacherPassword}
+                                onChange={(e) => setCourseTeacherPassword(e.target.value)}
+                                required
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          /* Case 2: Claimed course login */
+                          <>
+                            <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#a7f3d0', padding: '12px', borderRadius: '12px', fontSize: '13px', marginBottom: '20px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                              Profesor registrado: <strong>{validatedCourse.admin_email}</strong>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Contraseña docente</label>
+                              <input 
+                                type="password" 
+                                className="form-input" 
+                                placeholder="••••••••"
+                                value={courseTeacherPassword}
+                                onChange={(e) => setCourseTeacherPassword(e.target.value)}
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            type="button" 
+                            onClick={() => { setValidatedCourse(null); setErrorMsg(''); setSuccessMsg(''); }}
+                            style={{ padding: '12px 18px', fontSize: '14px' }}
+                          >
+                            Volver
+                          </button>
+                          <button className="pulse-primary-btn" type="submit" style={{ flex: 1, justifyContent: 'center' }} disabled={loading}>
+                            {loading ? 'Ingresando...' : !validatedCourse.admin_email ? 'Registrar y Reclamar' : 'Iniciar Sesión'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 )}
               </div>

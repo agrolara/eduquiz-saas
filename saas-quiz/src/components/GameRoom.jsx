@@ -1518,11 +1518,24 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           `}</style>
         </div>
       )}
-      <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <span className="tag tag-success" style={{ marginBottom: '8px' }}>
-            Partida en vivo
-          </span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+            <span className="tag tag-success">
+              Partida en vivo
+            </span>
+            {session.codigo && (
+              <span className="tag tag-warning" style={{
+                fontFamily: 'var(--font-mono)',
+                textTransform: 'none',
+                fontWeight: '800',
+                fontSize: '11px',
+                padding: '3px 8px'
+              }}>
+                Código: {session.codigo}
+              </span>
+            )}
+          </div>
           <h1 style={{ fontSize: '28px', color: 'var(--brand-dark)' }}>{cleanSessionName}</h1>
         </div>
         <button className="btn btn-secondary" onClick={onLeave}>

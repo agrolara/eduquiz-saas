@@ -358,6 +358,18 @@ function AppContent() {
     };
   }, [profile?.curso_id, demoMode]);
 
+  useEffect(() => {
+    if (user && profile?.rol === 'jugador') {
+      const autoId = localStorage.getItem('autoJoinSessionId');
+      const autoName = localStorage.getItem('autoJoinSessionName');
+      if (autoId && autoName) {
+        localStorage.removeItem('autoJoinSessionId');
+        localStorage.removeItem('autoJoinSessionName');
+        handleJoinSession(autoId, autoName);
+      }
+    }
+  }, [user, profile]);
+
   if (loading) {
     return (
       <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '16px' }}>

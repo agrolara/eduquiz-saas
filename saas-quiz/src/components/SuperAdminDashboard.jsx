@@ -151,11 +151,16 @@ export default function SuperAdminDashboard() {
     e.preventDefault();
     if (!newCourseName || !selectedSchool) return;
 
+    const cleanSchool = selectedSchool.nombre.replace(/[^a-zA-Z0-9]/g, '');
+    const cleanCourse = newCourseName.replace(/[^a-zA-Z0-9]/g, '');
+    const generatedCode = `${cleanSchool}-${cleanCourse}-2026`;
+
     if (demoMode) {
       const newCourse = {
         id: `course-${Date.now()}`,
         colegio_id: selectedSchool.id,
         nombre: newCourseName,
+        codigo: generatedCode,
         admin_email: newAdminEmail || null,
         plan_tipo: 'trial',
         plan_valor_mensual: 0,
@@ -174,6 +179,7 @@ export default function SuperAdminDashboard() {
       .insert([{ 
         colegio_id: selectedSchool.id, 
         nombre: newCourseName, 
+        codigo: generatedCode,
         admin_email: newAdminEmail || null 
       }])
       .select();
@@ -480,6 +486,7 @@ export default function SuperAdminDashboard() {
                       <thead>
                         <tr>
                           <th>Curso</th>
+                          <th>Código de Curso</th>
                           <th style={{ textAlign: 'center' }}>Plan</th>
                           <th>Administrador (Apoderado)</th>
                           <th style={{ textAlign: 'center', width: '60px' }}>Acciones</th>
@@ -491,6 +498,7 @@ export default function SuperAdminDashboard() {
                           return (
                             <tr key={course.id}>
                               <td style={{ fontWeight: '700' }}>{course.nombre}</td>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', fontWeight: '800', color: 'var(--brand)' }}>{course.codigo || '—'}</td>
                               <td style={{ textAlign: 'center' }}>
                                 <span style={{
                                   display: 'inline-block',
