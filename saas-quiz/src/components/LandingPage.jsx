@@ -63,13 +63,16 @@ export default function LandingPage() {
       // Mock validation in demo mode
       if (code.toLowerCase().includes('2026') || code.toLowerCase().includes('-')) {
         // Course Code (hyphenated or has year)
-        setValidatedCourse({
+        const mockCourse = {
           id: 'demo-curso-1a',
           nombre: 'Tercero Yellow',
+          codigo: code,
           colegio_id: 'school-1',
           admin_email: code.toLowerCase().includes('claimed') ? 'profesora.teresa@gmail.com' : null
-        });
-        setSuccessMsg("Código de Curso validado con éxito.");
+        };
+        setValidatedCourse(mockCourse);
+        setSuccessMsg("Código de Curso validado con éxito. Iniciando sesión...");
+        handleTeacherAutoLogin(mockCourse);
       } else {
         // Session Code
         setValidatedSession({
@@ -110,6 +113,7 @@ export default function LandingPage() {
       if (!cErr && course) {
         setValidatedCourse(course);
         setSuccessMsg(`Código de Curso válido. Colegio: ${course.colegios?.nombre || '—'}. Curso: ${course.nombre}.`);
+        await handleTeacherAutoLogin(course);
         setLoading(false);
         return;
       }
@@ -118,6 +122,74 @@ export default function LandingPage() {
     } catch (err) {
       console.error(err);
       setErrorMsg("Error al conectar con el servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTeacherAutoLogin = async (course) => {
+    setErrorMsg('');
+    setLoading(true);
+
+    const virtualEmail = `teacher_${course.id.substring(0, 8)}@virtual.eduquiz.com`;
+    const virtualPassword = `teacher_pass_${course.codigo}`;
+
+    if (demoMode) {
+      alert(`Simulación: Acceso Docente exitoso para el curso ${course.nombre} sin contraseña.`);
+      selectDemoUser('admin_curso');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Attempt to sign in
+      const { data: authData, error: loginErr } = await supabase.auth.signInWithPassword({
+        email: virtualEmail,
+        password: virtualPassword
+      });
+
+      if (!loginErr && authData.user) {
+        setLoading(false);
+        return;
+      }
+
+      // 2. If login fails, sign up
+      const { data: signupData, error: signupErr } = await supabase.auth.signUp({
+        email: virtualEmail,
+        password: virtualPassword,
+        options: {
+          data: {
+            full_name: `Profesor ${course.nombre}`
+          }
+        }
+      });
+
+      if (signupErr) {
+        setErrorMsg("Error al registrar docente: " + signupErr.message);
+        setLoading(false);
+        return;
+      }
+
+      if (signupData.user) {
+        // Link course admin email
+        await supabase
+          .from('cursos')
+          .update({ admin_email: virtualEmail })
+          .eq('id', course.id);
+
+        // Update profile
+        await supabase
+          .from('perfiles_usuarios')
+          .update({
+            rol: 'admin_curso',
+            curso_id: course.id,
+            nombre: `Profesor ${course.nombre}`
+          })
+          .eq('id', signupData.user.id);
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Error al conectar con la plataforma.");
     } finally {
       setLoading(false);
     }
@@ -190,79 +262,6 @@ export default function LandingPage() {
     } catch (err) {
       console.error(err);
       setErrorMsg("Error inesperado al unirse a la sala.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTeacherAccess = async (e) => {
-    e.preventDefault();
-    if (!validatedCourse) return;
-    setErrorMsg('');
-    setLoading(true);
-
-    const isClaimed = !!validatedCourse.admin_email;
-
-    if (demoMode) {
-      alert(isClaimed ? "Simulación: Acceso Docente exitoso." : "Simulación: Registro y reclamo de curso exitoso.");
-      selectDemoUser('admin_curso');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      if (isClaimed) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: validatedCourse.admin_email,
-          password: courseTeacherPassword
-        });
-        if (error) {
-          setErrorMsg("Contraseña incorrecta: " + error.message);
-        }
-      } else {
-        if (!courseTeacherEmail || !courseTeacherPassword || !courseTeacherName) {
-          setErrorMsg("Por favor completa todos los campos del formulario.");
-          setLoading(false);
-          return;
-        }
-
-        const { data: signupData, error: signupErr } = await supabase.auth.signUp({
-          email: courseTeacherEmail,
-          password: courseTeacherPassword,
-          options: {
-            data: {
-              full_name: courseTeacherName
-            }
-          }
-        });
-
-        if (signupErr) {
-          setErrorMsg("Error al registrar: " + signupErr.message);
-          setLoading(false);
-          return;
-        }
-
-        if (signupData.user) {
-          // Link course admin
-          await supabase
-            .from('cursos')
-            .update({ admin_email: courseTeacherEmail })
-            .eq('id', validatedCourse.id);
-
-          // Update profile
-          await supabase
-            .from('perfiles_usuarios')
-            .update({
-              rol: 'admin_curso',
-              curso_id: validatedCourse.id,
-              nombre: courseTeacherName
-            })
-            .eq('id', signupData.user.id);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Error al conectar con la plataforma.");
     } finally {
       setLoading(false);
     }
@@ -964,90 +963,18 @@ export default function LandingPage() {
                       </form>
                     )}
 
-                    {/* Step 2B: Validated Course (Teacher access) */}
+                    {/* Step 2B: Validated Course (Teacher auto-login loading) */}
                     {validatedCourse && (
-                      <form onSubmit={handleTeacherAccess}>
-                        <h3 style={{ fontSize: '22px', marginBottom: '8px', fontWeight: '800', color: '#ffffff', fontFamily: 'Fredoka, sans-serif' }}>
-                          🏫 Acceso Docente
-                        </h3>
-                        <p style={{ color: '#a5b4fc', fontSize: '14px', marginBottom: '24px', fontWeight: '600' }}>
+                      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                        <div className="user-avatar animate-spin" style={{ width: '40px', height: '40px', fontSize: '18px', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⚡</div>
+                        <h4 style={{ fontSize: '18px', fontWeight: '800', color: '#ffffff', marginBottom: '8px', fontFamily: 'Fredoka, sans-serif' }}>
+                          Ingresando al Aula Docente
+                        </h4>
+                        <p style={{ color: '#a5b4fc', fontSize: '13px', lineHeight: '1.6' }}>
+                          Colegio: {validatedCourse.colegios?.nombre || '—'}<br />
                           Curso: {validatedCourse.nombre}
                         </p>
-
-                        {/* Case 1: Unclaimed course registration */}
-                        {!validatedCourse.admin_email ? (
-                          <>
-                            <div style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#c7d2fe', padding: '12px', borderRadius: '12px', fontSize: '13px', marginBottom: '20px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-                              ℹ Este curso aún no tiene un profesor registrado. Rellena los datos para reclamarlo y crear tu acceso.
-                            </div>
-                            <div className="form-group" style={{ marginBottom: '16px' }}>
-                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Tu Nombre completo</label>
-                              <input 
-                                type="text" 
-                                className="form-input" 
-                                placeholder="Ej: Profesora Teresa"
-                                value={courseTeacherName}
-                                onChange={(e) => setCourseTeacherName(e.target.value)}
-                                required
-                              />
-                            </div>
-                            <div className="form-group" style={{ marginBottom: '16px' }}>
-                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Correo electrónico docente</label>
-                              <input 
-                                type="email" 
-                                className="form-input" 
-                                placeholder="ejemplo@colegio.cl"
-                                value={courseTeacherEmail}
-                                onChange={(e) => setCourseTeacherEmail(e.target.value)}
-                                required
-                              />
-                            </div>
-                            <div className="form-group" style={{ marginBottom: '20px' }}>
-                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Crea tu contraseña</label>
-                              <input 
-                                type="password" 
-                                className="form-input" 
-                                placeholder="Mínimo 6 caracteres"
-                                value={courseTeacherPassword}
-                                onChange={(e) => setCourseTeacherPassword(e.target.value)}
-                                required
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          /* Case 2: Claimed course login */
-                          <>
-                            <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#a7f3d0', padding: '12px', borderRadius: '12px', fontSize: '13px', marginBottom: '20px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                              Profesor registrado: <strong>{validatedCourse.admin_email}</strong>
-                            </div>
-                            <div className="form-group" style={{ marginBottom: '20px' }}>
-                              <label className="form-label" style={{ color: '#cbd5e1', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Contraseña docente</label>
-                              <input 
-                                type="password" 
-                                className="form-input" 
-                                placeholder="••••••••"
-                                value={courseTeacherPassword}
-                                onChange={(e) => setCourseTeacherPassword(e.target.value)}
-                                required
-                              />
-                            </div>
-                          </>
-                        )}
-
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                          <button 
-                            className="btn btn-secondary" 
-                            type="button" 
-                            onClick={() => { setValidatedCourse(null); setErrorMsg(''); setSuccessMsg(''); }}
-                            style={{ padding: '12px 18px', fontSize: '14px' }}
-                          >
-                            Volver
-                          </button>
-                          <button className="pulse-primary-btn" type="submit" style={{ flex: 1, justifyContent: 'center' }} disabled={loading}>
-                            {loading ? 'Ingresando...' : !validatedCourse.admin_email ? 'Registrar y Reclamar' : 'Iniciar Sesión'}
-                          </button>
-                        </div>
-                      </form>
+                      </div>
                     )}
                   </div>
                 )}
