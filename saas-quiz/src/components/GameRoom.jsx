@@ -280,18 +280,41 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     return () => clearInterval(timerInterval.current);
   }, [session?.estado, session?.temporizador_fin]);
 
+  // Auto-append student to turn order if they join after the game started
+  useEffect(() => {
+    if (demoMode || !session || !profile || profile.rol !== 'jugador') return;
+    if (session.estado === 'esperando' || session.estado === 'finalizado') return;
+    
+    const turns = session.orden_turnos || [];
+    if (!turns.includes(profile.id)) {
+      console.log("Player not in turn order. Appending to turns list...");
+      const updatedTurns = [...turns, profile.id];
+      
+      // If the current turn is not set yet, set it to the first player
+      const updates = { orden_turnos: updatedTurns };
+      if (!session.turno_actual_usuario_id || session.turno_actual_usuario_id === '') {
+        updates.turno_actual_usuario_id = profile.id;
+      }
+      
+      supabase
+        .from('sesiones_juego')
+        .update(updates)
+        .eq('id', sessionId)
+        .then(({ error }) => {
+          if (error) console.error("Error appending player to turns:", error);
+        });
+    }
+  }, [session?.estado, session?.orden_turnos, session?.turno_actual_usuario_id, profile?.id, demoMode, sessionId]);
+
   // Auto-Start Game scheduled timer
   const autoStartGame = async () => {
     if (session?.estado !== 'esperando') return;
     
-    // Establishing turn order
+    // Establishing turn order (online players only)
     let turnOrder = activePlayers.map(p => p.id);
     if (turnOrder.length === 0) {
-      // Fallback to all registered players in the course
-      turnOrder = players.map(p => p.id);
+      return; // Do not start if no one is online
     }
-    
-    if (turnOrder.length === 0) return; // Wait for players list
     
     if (demoMode) {
       setSession(s => ({
@@ -951,18 +974,27 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
   const handleStartGame = async () => {
     let turnOrder = activePlayers.map(p => p.id);
     if (turnOrder.length === 0) {
-      // Fallback to all registered players in the course
-      turnOrder = players.map(p => p.id);
-    }
-
-    if (turnOrder.length === 0) {
-      alert("No hay alumnos registrados en este curso ni conectados en la sala. Agrega alumnos al curso primero.");
+      alert("No hay alumnos conectados en la sala en este momento. Espera a que ingresen antes de iniciar la partida.");
       return;
     }
+
+    let limitVal = -1;
+    if (window.confirm("¿Deseas colocar un límite de rondas/turnos para esta partida?")) {
+      const userLimit = window.prompt("Ingresa el número de preguntas que hará cada alumno (ej: 1, 2, 3...) o presiona Cancelar para juego libre/infinito:");
+      if (userLimit !== null && userLimit.trim() !== '') {
+        const parsed = parseInt(userLimit, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          limitVal = parsed;
+        }
+      }
+    }
+
+    const serializedName = `${cleanSessionName}|limit:${limitVal}`;
 
     if (demoMode) {
       setSession(s => ({
         ...s,
+        nombre: serializedName,
         estado: 'pregunta',
         turno_actual_usuario_id: turnOrder[0],
         orden_turnos: turnOrder,
@@ -974,6 +1006,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
     const { error } = await supabase
       .from('sesiones_juego')
       .update({
+        nombre: serializedName,
         estado: 'pregunta',
         turno_actual_usuario_id: turnOrder[0],
         orden_turnos: turnOrder,
@@ -2071,7 +2104,7 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
           <div className="double-bezel-outer" style={{ marginBottom: '24px' }}>
             <div className="double-bezel-inner" style={{ padding: '24px' }}>
               <h3 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--brand-dark)', marginBottom: '16px' }}>
-                ⚙️ Control del Profesor
+                ⚙️ Control del Apoderado o Profesor
               </h3>
               
               <div className="form-group" style={{ marginBottom: '16px' }}>
@@ -2099,6 +2132,15 @@ export default function GameRoom({ sessionId, sessionName, onLeave }) {
                 <small style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>
                   Presiona Enter o "Fijar". Dejar vacío para rondas libres.
                 </small>
+                
+                <div style={{ marginTop: '12px', padding: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', lineHeight: '1.4', color: 'var(--text-muted)' }}>
+                  <strong>💡 ¿Cómo funcionan las rondas?</strong>
+                  <ul style={{ margin: '6px 0 0', paddingLeft: '16px' }}>
+                    <li style={{ marginBottom: '4px' }}><strong>Sin límite (libre)</strong>: Las preguntas continúan de forma indefinida e ilimitada.</li>
+                    <li style={{ marginBottom: '4px' }}><strong>Fijar 1</strong>: Cada alumno redactará exactamente <strong>1 pregunta</strong>.</li>
+                    <li><strong>Fijar 2 o más</strong>: Cada alumno redactará la cantidad de preguntas fijada (2, 3, etc.) antes de finalizar la partida.</li>
+                  </ul>
+                </div>
               </div>
 
               {/* Progress bar */}
