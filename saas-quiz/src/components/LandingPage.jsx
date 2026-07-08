@@ -223,7 +223,7 @@ export default function LandingPage() {
     const cleanName = selectedEntry ? selectedEntry.nombre : studentName;
     // Use whitelist entry ID for deterministic email across sessions
     const emailKey = selectedEntry ? selectedEntry.id.substring(0, 12) : cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const virtualEmail = `std_${emailKey}@virtual.eduquiz.com`;
+    const virtualEmail = `std_v2_${emailKey}@virtual.eduquiz.com`;
     const virtualPassword = `student_pass_${emailKey}`;
 
     if (demoMode) {
