@@ -224,7 +224,7 @@ export default function LandingPage() {
     // Use whitelist entry ID for deterministic email across sessions
     const emailKey = selectedEntry ? selectedEntry.id.substring(0, 12) : cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
     const virtualEmail = `std_${emailKey}@virtual.eduquiz.com`;
-    const virtualPassword = `student_${validatedSession.codigo}`;
+    const virtualPassword = `student_pass_${emailKey}`;
 
     if (demoMode) {
       alert(`Simulación: Iniciando sesión como ${cleanName}`);
@@ -998,14 +998,14 @@ export default function LandingPage() {
                         </div>
 
                         {/* Box explicativa de cómo funciona el juego */}
-                        <div style={{ marginTop: '28px', padding: '18px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '12px', fontSize: '13px', lineHeight: '1.5', color: '#cbd5e1', textAlign: 'left' }}>
-                          <h4 style={{ color: '#fbbf24', margin: '0 0 10px 0', fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Fredoka, sans-serif' }}>
+                        <div style={{ marginTop: '28px', padding: '24px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '16px', fontSize: '15px', lineHeight: '1.6', color: '#e2e8f0', textAlign: 'left', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)' }}>
+                          <h4 style={{ color: '#fbbf24', margin: '0 0 14px 0', fontSize: '18px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Fredoka, sans-serif' }}>
                             📖 ¿Cómo se juega a EduQuiz?
                           </h4>
-                          <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>
+                          <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#fbbf24', fontWeight: '700' }}>
                             ¡Hola! Este es un juego divertido en tiempo real donde aprenderemos en 3 fases rápidas:
                           </p>
-                          <ul style={{ margin: '0', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '8px', color: '#cbd5e1' }}>
+                          <ul style={{ margin: '0', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '12px', color: '#e2e8f0' }}>
                             <li>
                               <strong>✏️ Fase 1 - Escribir Preguntas (2 min):</strong> Un compañero (o el profesor) redactará una pregunta inteligente sobre la materia de hoy.
                             </li>
@@ -1014,12 +1014,12 @@ export default function LandingPage() {
                             </li>
                             <li>
                               <strong>⭐ Fase 3 - Calificar (2 min):</strong> Quien creó la pregunta (o el profesor) revisará y calificará las respuestas: 
-                              <span style={{ display: 'block', color: '#fbbf24', marginTop: '4px', paddingLeft: '6px', fontSize: '12px' }}>
+                              <span style={{ display: 'block', color: '#fbbf24', marginTop: '6px', paddingLeft: '8px', fontSize: '13px' }}>
                                 • Buena = 10 pts | • Regular = 5 pts | • Mala = 0 pts
                               </span>
                             </li>
                           </ul>
-                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: '14px', paddingTop: '10px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', fontWeight: '600', textAlign: 'center' }}>
+                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '18px', paddingTop: '14px', fontSize: '13px', color: '#fbbf24', fontStyle: 'italic', fontWeight: '700', textAlign: 'center' }}>
                             ¡Sé rápido y preciso para llegar al podio de campeones! 🏆
                           </div>
                         </div>
