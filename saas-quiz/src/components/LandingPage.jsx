@@ -1204,7 +1204,7 @@ export default function LandingPage() {
               <span style={{ position: 'absolute', top: '16px', right: '24px', fontSize: '72px', fontWeight: '900', color: 'rgba(249,115,22,0.08)', fontFamily: 'var(--font-mono)' }}>02</span>
               <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '16px', color: '#ffffff', fontFamily: 'Fredoka, sans-serif' }}>Ingreso al Instante</h3>
               <p style={{ color: '#cbd5e1', fontSize: '15px', lineHeight: '1.6', margin: 0 }}>
-                El alumno ingresa con su correo para unirse de inmediato a la sala de juego activa del día, listo para participar sin demoras.
+                El alumno entrará con un solo código de la sala de juego creada, listo para participar sin demoras.
               </p>
             </div>
 
